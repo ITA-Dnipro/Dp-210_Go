@@ -1,0 +1,19 @@
+version: "2.4"
+
+services:
+  db:
+    image: "postgres"
+    restart: always
+    container_name: postgres-test
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: test
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/db
