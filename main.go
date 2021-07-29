@@ -7,8 +7,9 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/middlware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/delivery/http/server"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/repository/postgres"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/usecases"
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -34,8 +35,11 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
+
 	repo := postgres.NewRepository(db)
-	srv := server.NewServer(repo, logger)
+	usecase := usecases.NewUsecases(repo)
+	srv := server.NewServer(usecase, logger)
+
 	md := &middlware.Middleware{Logger: logger}
 	// Init router
 	r := mux.NewRouter()

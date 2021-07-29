@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/usecases"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
 )
+
+var _ usecases.UsersRepository = (*Repository)(nil)
 
 // suggest to have it as repository method
 func NewRepository(db *sql.DB) *Repository {

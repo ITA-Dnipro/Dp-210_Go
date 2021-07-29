@@ -8,14 +8,12 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/customerrors"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/entity"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
-// TODO :fix mock path
-//go:generate mockgen -destination=repo_mock.go -package=server -build_flags=-mod=mod github.com/Metalscreame/go-training/day_6/networking-handlers/server BookRepository
-type UsersRepository interface {
+type UsersUsecases interface {
 	Create(ctx context.Context, u entity.User) (string, error)
 	Update(ctx context.Context, u entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
@@ -26,17 +24,17 @@ type UsersRepository interface {
 const idKey = "id"
 
 type Server struct {
-	repo   UsersRepository
-	logger *zap.Logger
+	usecases UsersUsecases
+	logger   *zap.Logger
 }
 
-func NewServer(repo UsersRepository, log *zap.Logger) *Server {
-	return &Server{repo: repo, logger: log}
+func NewServer(uc UsersUsecases, log *zap.Logger) *Server {
+	return &Server{usecases: uc, logger: log}
 }
 
 // GetUsers Get all users.
 func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := s.repo.GetAll(r.Context())
+	users, err := s.usecases.GetAll(r.Context())
 	if err != nil {
 		s.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -52,7 +50,7 @@ func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	// Loop through user and find one with the id from the params
 	id := params[idKey]
 
-	user, err := s.repo.GetByID(r.Context(), id)
+	user, err := s.usecases.GetByID(r.Context(), id)
 	if err == nil {
 		s.render(w, user)
 		return
@@ -74,7 +72,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.repo.Create(r.Context(), user)
+	id, err := s.usecases.Create(r.Context(), user)
 	if err != nil {
 		s.logger.Error("can't create a user", zap.Error(err))
 		s.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
@@ -96,7 +94,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ID = params["id"]
-	if err := s.repo.Update(r.Context(), user); err != nil {
+	if err := s.usecases.Update(r.Context(), user); err != nil {
 		s.logger.Error("can't update a user", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			s.writeErrorResponse(http.StatusNotFound,
@@ -116,7 +114,7 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params[idKey]
-	if err := s.repo.Delete(r.Context(), id); err != nil {
+	if err := s.usecases.Delete(r.Context(), id); err != nil {
 		s.logger.Error("can't delete", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			s.writeErrorResponse(http.StatusNotFound,
