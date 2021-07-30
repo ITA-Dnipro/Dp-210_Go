@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/middlware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
+	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/usecases"
+	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -19,7 +19,6 @@ import (
 func main() {
 	logger, _ := zap.NewProduction()
 	dsn := "postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"
-
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
