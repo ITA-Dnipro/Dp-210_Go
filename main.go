@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/middlware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/delivery/http/server"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/repository/postgres"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/usecases"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
+	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/usecases"
 	"github.com/gorilla/mux"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -18,8 +18,8 @@ import (
 // Main function
 func main() {
 	logger, _ := zap.NewProduction()
-
 	dsn := "postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"
+
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
@@ -35,10 +35,9 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
-
 	repo := postgres.NewRepository(db)
 	usecase := usecases.NewUsecases(repo)
-	srv := server.NewServer(usecase, logger)
+	hs := handlers.NewHandlers(usecase, logger)
 
 	md := &middlware.Middleware{Logger: logger}
 	// Init router
@@ -55,11 +54,11 @@ func main() {
 	r.Use(md.LoggingMiddleware)
 
 	// Route handles & endpoints
-	r.HandleFunc("/users", srv.GetUsers).Methods(http.MethodGet)
-	r.HandleFunc("/users/{id}", srv.GetUser).Methods("GET")
-	r.HandleFunc("/users", srv.CreateUser).Methods("POST")
-	r.HandleFunc("/users/{id}", srv.UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/{id}", srv.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users", hs.GetUsers).Methods(http.MethodGet)
+	r.HandleFunc("/users/{id}", hs.GetUser).Methods("GET")
+	r.HandleFunc("/users", hs.CreateUser).Methods("POST")
+	r.HandleFunc("/users/{id}", hs.UpdateUser).Methods("PUT")
+	r.HandleFunc("/users/{id}", hs.DeleteUser).Methods("DELETE")
 	logger.Info("starting web server")
 
 	// Start server

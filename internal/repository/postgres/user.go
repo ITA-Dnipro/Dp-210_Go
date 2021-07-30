@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/user/usecases"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/usecases"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
