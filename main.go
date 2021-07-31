@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/middlware"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/middleware"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
@@ -38,7 +38,7 @@ func main() {
 	usecase := usecases.NewUsecases(repo)
 	hs := handlers.NewHandlers(usecase, logger)
 
-	md := &middlware.Middleware{Logger: logger}
+	md := &middleware.Middleware{Logger: logger}
 	// Init router
 	r := mux.NewRouter()
 
