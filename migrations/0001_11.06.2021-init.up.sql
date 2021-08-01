@@ -2,9 +2,11 @@
 
 CREATE TABLE IF NOT EXISTS users
 (
-    id        text NOT NULL PRIMARY KEY,
-    first_name text DEFAULT '',
-    last_name  text DEFAULT ''
+    id 	           text NOT NULL PRIMARY KEY,
+    name      	   text DEFAULT '',
+    email     	   text DEFAULT '',
+    role     	   text DEFAULT '',
+    password_hash  text DEFAULT ''
 );
 
 
