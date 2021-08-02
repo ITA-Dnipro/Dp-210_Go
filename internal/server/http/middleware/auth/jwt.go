@@ -1,4 +1,4 @@
-package middlware
+package auth
 
 import (
 	"crypto/rsa"
