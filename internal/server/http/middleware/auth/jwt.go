@@ -23,6 +23,8 @@ emkBheE4h+PxAiEAnRdtsanAYKYLB0hJRSCcaDW8GaboYXIgoT2WO5yhrFcCIBkg
 URG/h+mR4G6J7qPdHN2S8wK7WyqJx3TiH/nwVK+t
 -----END RSA PRIVATE KEY-----`
 
+type JwtToken string
+
 var (
 	verifyKey *rsa.PublicKey
 	signKey   *rsa.PrivateKey
@@ -54,7 +56,7 @@ func InitializeAuthKeys() error {
 	return nil
 }
 
-func CreateToken(userId string, lifetime time.Duration) (string, error) {
+func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
 	now := time.Now()
 	tomorrow := now.Add(lifetime)
 	claims := &AuthClaims{
@@ -66,11 +68,12 @@ func CreateToken(userId string, lifetime time.Duration) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	return token.SignedString(signKey)
+	t, err := token.SignedString(signKey)
+	return JwtToken(t), err
 }
 
-func ValidateToken(jwtStr string) (string, error) {
-	token, err := jwt.ParseWithClaims(jwtStr, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ValidateToken(t JwtToken) (string, error) {
+	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return verifyKey, nil
 	})
 

@@ -8,26 +8,48 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 )
 
-var UserIdContext = "userId"
+type contextKey string
 
-func AuthMiddleware(next http.Handler) http.Handler {
+var (
+	KeyUserId = contextKey("userId")
+)
+
+func (*Middleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
-		if len(authHeader) != 2 {
+		t, ok := tokenfromRequest(r)
+		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Malformed Token"))
 			return
 		}
 
-		jwtToken := authHeader[1]
-		uId, err := auth.ValidateToken(jwtToken)
+		uId, err := auth.ValidateToken(t)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIdContext, uId)
+		ctx := NewContext(r.Context(), uId)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func NewContext(ctx context.Context, userId string) context.Context {
+	return context.WithValue(ctx, KeyUserId, userId)
+}
+
+func FromContext(ctx context.Context) (string, bool) {
+	id, ok := ctx.Value(KeyUserId).(string)
+	return id, ok
+}
+
+func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
+	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
+	if len(authHeader) != 2 {
+		return auth.JwtToken(""), false
+	}
+
+	jwtToken := auth.JwtToken(authHeader[1])
+	return jwtToken, true
 }
