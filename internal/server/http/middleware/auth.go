@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/server/http/middleware/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 )
 
 var UserIdContext = "userId"
