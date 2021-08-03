@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"go.uber.org/zap"
 )
 
 type UserUsecases interface {
-	GetRoleByID(ctx context.Context, id string) (entity.Role, error)
+	GetRoleByID(ctx context.Context, id string) (role.Role, error)
 }
 
 type Middleware struct {
@@ -32,23 +32,14 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) AdminOnly(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (m *Middleware) RoleOnly(roles ...entity.Role) func(next http.Handler) http.Handler {
+func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			//id, ok := ctx.Value("id").(userId)
-			ok := true
+			id, ok := FromContext(ctx)
 			if ok {
-				//TODO replace get id from context.
-				id := "text"
-				role, err := m.UserUC.GetRoleByID(ctx, id)
-				if err == nil && isAllowedRole(role, roles) {
+				rl, err := m.UserUC.GetRoleByID(ctx, id)
+				if err == nil && role.IsAllowedRole(rl, roles) {
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -56,13 +47,4 @@ func (m *Middleware) RoleOnly(roles ...entity.Role) func(next http.Handler) http
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		})
 	}
-}
-
-func isAllowedRole(r entity.Role, allowedRoles []entity.Role) bool {
-	for _, ar := range allowedRoles {
-		if r == ar {
-			return true
-		}
-	}
-	return false
 }

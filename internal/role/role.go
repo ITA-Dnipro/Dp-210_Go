@@ -1,9 +1,8 @@
-package entity
+package role
 
 // Role represent permission roles.
 type Role string
 
-//TODO add role description.
 const (
 	// Admin represent an admin permission role.
 	Admin Role = "admin"
@@ -12,3 +11,13 @@ const (
 	// Viewer represent an viewer permission role.
 	Viewer Role = "viewer"
 )
+
+// IsAllowedRole check if role is in allowed roles.
+func IsAllowedRole(r Role, allowedRoles []Role) bool {
+	for _, ar := range allowedRoles {
+		if r == ar {
+			return true
+		}
+	}
+	return false
+}

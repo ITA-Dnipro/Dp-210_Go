@@ -70,26 +70,6 @@ func (r *Repository) Update(ctx context.Context, u *entity.User) error {
 	return nil
 }
 
-// UpdateRole updates a user permission role by id.
-func (r *Repository) UpdateRole(ctx context.Context, id, role string) error {
-	query := `UPDATE users SET role =$2 WHERE id=$1`
-	res, err := r.storage.ExecContext(ctx, query, id, role)
-	if err != nil {
-		return fmt.Errorf("update error: %w", err)
-	}
-
-	rowsAfected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("update role rows afected:%w", err)
-	}
-
-	if rowsAfected != 1 {
-		return fmt.Errorf("update role affected: %d", rowsAfected)
-	}
-
-	return nil
-}
-
 // Delete deletes a user from storage
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM users WHERE id = $1`
@@ -118,6 +98,18 @@ func (r *Repository) GetByID(ctx context.Context, id string) (entity.User, error
 	err := r.storage.QueryRowContext(ctx, query, id).Scan(&u.Name, &u.Email, &u.PermissionRole, &u.PasswordHash)
 	if err != nil {
 		return entity.User{}, fmt.Errorf("there is no users with %s id", id)
+	}
+	return u, nil
+}
+
+// GetByEmail get single user by id.
+func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User, error) {
+	query := `SELECT id, name, role, password_hash FROM users WHERE email = $1`
+	u := entity.User{}
+	u.Email = email
+	err := r.storage.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Name, &u.PermissionRole, &u.PasswordHash)
+	if err != nil {
+		return entity.User{}, fmt.Errorf("there is no users with %s id", email)
 	}
 	return u, nil
 }

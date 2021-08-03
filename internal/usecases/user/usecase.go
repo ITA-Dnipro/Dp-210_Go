@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,6 +17,7 @@ type UsersRepository interface {
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
+	GetByEmail(ctx context.Context, email string) (entity.User, error)
 }
 
 // NewUsecases create new user usecases.
@@ -43,7 +45,7 @@ func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, erro
 		ID:             id,
 		Name:           nu.Name,
 		Email:          nu.Email,
-		PermissionRole: entity.Viewer,
+		PermissionRole: role.Viewer,
 		PasswordHash:   hash,
 	}
 	return id, uc.repo.Create(ctx, u)
@@ -75,15 +77,28 @@ func (uc *Usecases) GetByID(ctx context.Context, id string) (entity.User, error)
 }
 
 // GetRoleByID get user permission role.
-func (uc *Usecases) GetRoleByID(ctx context.Context, id string) (entity.Role, error) {
+func (uc *Usecases) GetRoleByID(ctx context.Context, id string) (role.Role, error) {
 	u, err := uc.repo.GetByID(ctx, id)
 	if err != nil {
 		return "", fmt.Errorf("get role by id:%w", err)
 	}
-	return entity.Role(u.PermissionRole), nil
+	return role.Role(u.PermissionRole), nil
 }
 
 // GetAll get all users.
 func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 	return uc.repo.GetAll(ctx)
+}
+
+// Authenticate user by email and password.
+func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (id string, err error) {
+	u, err := uc.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", fmt.Errorf("authenticate get user by email:%w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
+		return "", fmt.Errorf("authentication failed:%w", err)
+	}
+
+	return u.ID, nil
 }
