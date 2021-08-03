@@ -1,14 +1,21 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"go.uber.org/zap"
 )
 
+type UserUsecases interface {
+	GetRoleByID(ctx context.Context, id string) (role.Role, error)
+}
+
 type Middleware struct {
 	Logger *zap.Logger
+	UserUC UserUsecases
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
@@ -20,7 +27,24 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		m.Logger.Info("request finished",
-			zap.String("took", time.Now().Sub(start).String()),
+			zap.String("took", time.Since(start).String()),
 		)
 	})
+}
+
+func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			id, ok := FromContext(ctx)
+			if ok {
+				rl, err := m.UserUC.GetRoleByID(ctx, id)
+				if err == nil && role.IsAllowedRole(rl, roles) {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		})
+	}
 }
