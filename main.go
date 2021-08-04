@@ -19,7 +19,6 @@ import (
 
 // Main function
 func main() {
-	//fmt.Println("Test art branch....")
 	logger, _ := zap.NewProduction()
 	dsn := "postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"
 	db, err := sql.Open("pgx", dsn)
