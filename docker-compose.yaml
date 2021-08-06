@@ -1,17 +1,60 @@
-version: "2.4"
+version: "3.8"
 
 services:
-  db:
-    image: "postgres"
-    restart: always
-    container_name: postgres-test
+  webapp:
+    container_name: webappctr
+    image: golang:latest
+    volumes:
+      - .:/go/src/dchw
+    working_dir: /go/src/dchw
+    command: go run main.go
+    links:
+      - redis
     environment:
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: test
+      TEST_ENV: testenv
+      REDIS_URL: redis:6379
+      DB_USER: postgres
+      DB_PASSWORD: dp210go # secret
+      DB_DB: postgres # test
+      DB_PORT: 5432
     ports:
-      - 5432:5432
+      - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - fullstack
+
+  redis:
+    container_name: redisctr
+    image: redis:latest
+    depends_on:
+      - db
+    networks:
+      - fullstack
+
+  db:
+    container_name: dbctr
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+    networks:
+      - fullstack
+
+volumes:
+  database_postgres:
+
+networks:
+  fullstack:
+    driver: bridge
