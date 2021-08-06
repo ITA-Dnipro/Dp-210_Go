@@ -28,6 +28,12 @@ func main() {
 		log.Fatal(fmt.Errorf("read env: %w", err))
 	}
 
+	var config config.Config
+	err = cleanenv.ReadConfig("config.json", &config)
+	if err != nil {
+		log.Fatal(fmt.Errorf("read config: %w", err))
+	}
+
 	logger, _ := zap.NewProduction()
 
 	db, err := sql.Open(env.SqlDriver, env.Connection)
