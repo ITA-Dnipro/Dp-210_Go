@@ -5,21 +5,21 @@ services:
     container_name: webappctr
     image: golang:latest
     volumes:
-      - .:/go/src/dchw
-    working_dir: /go/src/dchw
+      - .:/go/src/dp210go
+    working_dir: /go/src/dp210go
     command: go run main.go
     links:
       - redis
     environment:
-      TEST_ENV: testenv
+#      TEST_ENV: testenv
       REDIS_URL: redis:6379
       DB_USER: postgres
       DB_PASSWORD: secret
-      DB_HOST: 127.0.0.1
+      DB_HOST: db
       DB_DB: postgres
       DB_PORT: 5432
     ports:
-      - "8000:8000"
+      - 8000:8000
     depends_on:
       - redis
     networks:
@@ -38,16 +38,16 @@ services:
     image: postgres:latest
     restart: always
     ports:
-      - "5432:5432"
+      - 5432:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: postgres
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+#    healthcheck:
+#      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
     volumes:
       - database_postgres:/var/lib/postgresql/data
     networks:
