@@ -14,8 +14,9 @@ services:
       TEST_ENV: testenv
       REDIS_URL: redis:6379
       DB_USER: postgres
-      DB_PASSWORD: dp210go # secret
-      DB_DB: postgres # test
+      DB_PASSWORD: secret
+      DB_HOST: 127.0.0.1
+      DB_DB: postgres
       DB_PORT: 5432
     ports:
       - "8000:8000"
