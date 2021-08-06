@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
@@ -15,28 +16,36 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 // Main function
 func main() {
-	//fmt.Println("Test")
+	var env config.Env
+	err := cleanenv.ReadEnv(&env)
+	if err != nil {
+		log.Fatal(fmt.Errorf("read env: %w", err))
+	}
+
 	logger, _ := zap.NewProduction()
-	dsn := "postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"
-	db, err := sql.Open("pgx", dsn)
+
+	db, err := sql.Open(env.SqlDriver, env.Connection)
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
 	err = db.Ping()
 	if err != nil {
 		db.Close()
-		log.Fatal(fmt.Errorf("ping db %s : %w", dsn, err))
+		log.Fatal(fmt.Errorf("ping db %s : %w", env.Connection, err))
 	}
 
 	migrationsPath := "migrations"
-	err = postgres.MigrateUp(migrationsPath, dsn)
+	err = postgres.MigrateUp(migrationsPath, env.Connection)
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
+
 	// TODO remove. for testing purpose.
 	repo := user.NewRepository(db)
 	hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.MinCost)
@@ -67,5 +76,5 @@ func main() {
 	logger.Info("starting web server")
 	r := router.NewRouter(db, logger)
 	// Start server
-	log.Fatal(http.ListenAndServe("localhost:8000", r))
+	log.Fatal(http.ListenAndServe(env.Host+":"+env.Port, r))
 }
