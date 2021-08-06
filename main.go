@@ -46,6 +46,15 @@ func main() {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
 
+	initTestData(db)
+
+	logger.Info("starting web server")
+	r := router.NewRouter(db, logger)
+	// Start server
+	log.Fatal(http.ListenAndServe(env.Host+":"+env.Port, r))
+}
+
+func initTestData(db *sql.DB) {
 	// TODO remove. for testing purpose.
 	repo := user.NewRepository(db)
 	hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.MinCost)
@@ -72,9 +81,4 @@ func main() {
 		PasswordHash:   hash,
 		PermissionRole: role.Viewer,
 	})
-
-	logger.Info("starting web server")
-	r := router.NewRouter(db, logger)
-	// Start server
-	log.Fatal(http.ListenAndServe(env.Host+":"+env.Port, r))
 }

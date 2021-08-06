@@ -1,10 +1,8 @@
 package router
 
 import (
-	"context"
 	"database/sql"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
@@ -12,7 +10,6 @@ import (
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // NewRouter create http routes.
@@ -21,31 +18,6 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	usecase := usecases.NewUsecases(repo)
 	hs := handlers.NewHandlers(usecase, logger)
 	md := &middleware.Middleware{Logger: logger, UserUC: usecase}
-	// TODO remove. for testing purpose.
-	hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.MinCost)
-	repo.Create(context.Background(), entity.User{
-		ID:             "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-		Name:           "admin",
-		Email:          "admin@admin.com",
-		PasswordHash:   hash,
-		PermissionRole: role.Admin,
-	})
-	hash, _ = bcrypt.GenerateFromPassword([]byte("operator"), bcrypt.MinCost)
-	repo.Create(context.Background(), entity.User{
-		ID:             "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-		Name:           "operator",
-		Email:          "operator@admin.com",
-		PasswordHash:   hash,
-		PermissionRole: role.Operator,
-	})
-	hash, _ = bcrypt.GenerateFromPassword([]byte("user"), bcrypt.MinCost)
-	repo.Create(context.Background(), entity.User{
-		ID:             "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-		Name:           "test",
-		Email:          "test@admin.com",
-		PasswordHash:   hash,
-		PermissionRole: role.Viewer,
-	})
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
