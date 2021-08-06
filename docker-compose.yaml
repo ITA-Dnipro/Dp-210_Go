@@ -7,6 +7,7 @@ services:
     volumes:
       - .:/go/src/dp210go
     working_dir: /go/src/dp210go
+#    command: go run main.go
     command: go run main.go
     links:
       - redis
@@ -43,11 +44,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: postgres
-#    healthcheck:
-#      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - database_postgres:/var/lib/postgresql/data
     networks:
