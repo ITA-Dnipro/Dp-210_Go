@@ -7,7 +7,6 @@ services:
     volumes:
       - .:/go/src/dp210go
     working_dir: /go/src/dp210go
-#    command: go run main.go
     command: go run main.go
     links:
       - redis
