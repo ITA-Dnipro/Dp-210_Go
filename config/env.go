@@ -1,14 +1,27 @@
 package config
 
-import "net/url"
+import (
+	"fmt"
+	"net/url"
+)
 
 type Env struct {
-	Connection string `env:"DB_CONNECTION" env-default:"postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"`
-	SqlDriver  string `env:"SQL_DRIVER" env-default:"pgx"`
-	Host       string `env:"HOST" env-default:"localhost"`
-	Port       string `env:"PORT" env-default:"8000"`
+	DbUser     string `env:"DB_USER" env-default:"postgres"`
+	DbPassword string `env:"DB_PASSWORD" env-default:"secret"`
+	DbName     string `env:"DB_NAME" env-default:"test"`
+	DbHost     string `env:"DB_HOST" env-default:"0.0.0.0"`
+	DbPort     string `env:"DB_PORT" env-default:"5432"`
+	DbParams   string `env:"DB_PARAMS" env-default:"sslmode=disable&timezone=utc"`
+
+	AppHost string `env:"APP_HOST" env-default:"localhost"`
+	AppPort string `env:"APP_PORT" env-default:"8000"`
 }
 
 func (e *Env) ConnectionUrl() (*url.URL, error) {
-	return url.Parse(e.Connection)
+	return url.Parse(e.ConnectionStr())
+}
+
+func (e *Env) ConnectionStr() string {
+	return fmt.Sprintf("postgres://%v:%v@%v:%v/%v?%v", e.DbUser, e.DbPassword, e.DbHost, e.DbPort, e.DbName, e.DbParams)
+
 }
