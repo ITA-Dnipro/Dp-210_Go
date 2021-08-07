@@ -37,17 +37,17 @@ func main() {
 
 	logger, _ := zap.NewProduction()
 
-	db, err := sql.Open("pgx", env.ConnectionStr())
+	db, err := sql.Open("pgx", env.DatabaseStr())
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
 	err = db.Ping()
 	if err != nil {
 		db.Close()
-		log.Fatal(fmt.Errorf("ping db %s : %w", env.ConnectionStr(), err))
+		log.Fatal(fmt.Errorf("ping db %s : %w", env.DatabaseStr(), err))
 	}
 
-	err = postgres.MigrateUp(migrationsPath, env.ConnectionStr())
+	err = postgres.MigrateUp(migrationsPath, env.DatabaseStr())
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}

@@ -17,11 +17,11 @@ type Env struct {
 	AppPort string `env:"APP_PORT" env-default:"8000"`
 }
 
-func (e *Env) ConnectionUrl() (*url.URL, error) {
-	return url.Parse(e.ConnectionStr())
+func (e *Env) DatabaseUrl() (*url.URL, error) {
+	return url.Parse(e.DatabaseStr())
 }
 
-func (e *Env) ConnectionStr() string {
+func (e *Env) DatabaseStr() string {
 	return fmt.Sprintf("postgres://%v:%v@%v:%v/%v?%v", e.DbUser, e.DbPassword, e.DbHost, e.DbPort, e.DbName, e.DbParams)
 
 }
