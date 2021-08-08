@@ -2,22 +2,15 @@ version: "3.8"
 
 services:
   webapp:
-    container_name: webappctr
-    image: golang:latest
-    volumes:
-      - .:/go/src/dp210go
-    working_dir: /go/src/dp210go
-    command: go run main.go
+    container_name: dp210go_ctr
+    image: dp210goimg
+    working_dir: /app
+    command: ./dp210goapp
     links:
       - redis
-    environment:
-#      TEST_ENV: testenv
-      REDIS_URL: redis:6379
-      DB_USER: postgres
-      DB_PASSWORD: secret
-      DB_HOST: db
-      DB_DB: postgres
-      DB_PORT: 5432
+    env_file:
+      - ./env/db.env
+      - ./env/webapp.env
     ports:
       - 8000:8000
     depends_on:
@@ -26,7 +19,7 @@ services:
       - fullstack
 
   redis:
-    container_name: redisctr
+    container_name: dp210go_redisctr
     image: redis:latest
     depends_on:
       - db
@@ -34,27 +27,20 @@ services:
       - fullstack
 
   db:
-    container_name: dbctr
+    container_name: dp210go_dbctr
     image: postgres:latest
     restart: always
     ports:
       - 5432:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: postgres
+    env_file:
+      - ./env/db.env
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "test" ]
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    volumes:
-      - database_postgres:/var/lib/postgresql/data
     networks:
       - fullstack
-
-volumes:
-  database_postgres:
 
 networks:
   fullstack:

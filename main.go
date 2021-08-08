@@ -20,13 +20,14 @@ import (
 
 // Main function
 func main() {
+	fmt.Println("Start webapp dp210go OK!")
 	logger, _ := zap.NewProduction()
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&timezone=utc",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
-		os.Getenv("DB_DB"))
+		os.Getenv("POSTGRES_DB"))
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
@@ -72,5 +73,5 @@ func main() {
 	logger.Info("starting web server")
 	r := router.NewRouter(db, logger)
 	// Start server
-	log.Fatal(http.ListenAndServe("localhost:8000", r))
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
