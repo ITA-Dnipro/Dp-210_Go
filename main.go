@@ -73,5 +73,5 @@ func main() {
 	logger.Info("starting web server")
 	r := router.NewRouter(db, logger)
 	// Start server
-	log.Fatal(http.ListenAndServe(":8000", r))
+	log.Fatal(http.ListenAndServe("localhost:8000", r))
 }
