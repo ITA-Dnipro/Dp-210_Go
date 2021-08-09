@@ -1,14 +1,12 @@
 CREATE TABLE IF NOT EXISTS roles (
-   id serial PRIMARY KEY,
-   name varchar(25) NOT NULL,
+   name varchar(25) PRIMARY KEY,
    description varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS permisions (
-   id serial PRIMARY KEY,
-   name varchar(25) NOT NULL,
+   name varchar(25) PRIMARY KEY,
    description varchar(50),
-   role_id int REFERENCES roles (id)
+   role_name varchar REFERENCES roles (name)
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -16,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
    name varchar(25) UNIQUE NOT NULL,
    email varchar(25) UNIQUE NOT NULL,
    password_hash text NOT NULL,
-   role_id int REFERENCES roles (id)
+   role varchar REFERENCES roles (name)
 );
 
 CREATE TABLE IF NOT EXISTS cards (
