@@ -59,3 +59,6 @@ CREATE TABLE IF NOT EXISTS appointments (
    result varchar,
    timeRange tsrange
 );
+
+INSERT INTO roles (name)
+   VALUES ('admin'), ('operator'), ('viewer')
