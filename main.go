@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
@@ -19,9 +20,14 @@ import (
 
 // Main function
 func main() {
-	//fmt.Println("Test")
+	fmt.Println("Start webapp dp210go OK!")
 	logger, _ := zap.NewProduction()
-	dsn := "postgres://postgres:secret@0.0.0.0:5432/test?sslmode=disable&timezone=utc"
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&timezone=utc",
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("POSTGRES_DB"))
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
