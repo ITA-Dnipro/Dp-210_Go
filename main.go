@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/test"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/jackc/pgx/v4/stdlib"
