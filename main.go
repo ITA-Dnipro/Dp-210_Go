@@ -56,8 +56,6 @@ func main() {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
 
-	test.InitTestData(db)
-
 	r := router.NewRouter(db, logger)
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
