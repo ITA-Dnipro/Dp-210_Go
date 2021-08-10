@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
@@ -23,6 +24,8 @@ const (
 
 // Main function
 func main() {
+	log.Println("Starting webapp dp210go")
+
 	var env config.Env
 	err := cleanenv.ReadEnv(&env)
 	if err != nil {
@@ -38,6 +41,7 @@ func main() {
 	logger, _ := zap.NewProduction()
 
 	db, err := sql.Open("pgx", env.DatabaseStr())
+
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
@@ -54,7 +58,6 @@ func main() {
 
 	test.InitTestData(db)
 
-	logger.Info("starting web server")
 	r := router.NewRouter(db, logger)
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
