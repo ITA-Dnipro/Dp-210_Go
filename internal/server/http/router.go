@@ -50,7 +50,12 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/login", hs.GetToken)     // POST /api/v1/login
+		r.Post("/login", hs.GetToken) // POST /api/v1/login
+
+		r.Route("/password", func(r chi.Router) {
+			r.Post("/restore", hs.RestorePassword)
+		})
+
 		r.Post("/users", hs.CreateUser)   // POST /api/v1/users
 		r.Route("/", func(r chi.Router) { // route with permissions
 			r.Use(md.AuthMiddleware)

@@ -24,6 +24,8 @@ type UsersUsecases interface {
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
 	Authenticate(ctx context.Context, email, password string) (id string, err error)
+
+	SendRestorePasswordCode(ctx context.Context, email string) (string error)
 }
 
 const idKey = "id"
@@ -66,6 +68,21 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("ger all request succeeded")
 	h.render(w, tkn)
+}
+
+func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
+	var req entity.PasswordRestoreReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "is not an email", w)
+		return
+	}
+
+	if err := h.usecases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
+		h.writeErrorResponse(http.StatusAccepted, "your request failed", w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // GetUsers Get all users.

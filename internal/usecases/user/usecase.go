@@ -6,6 +6,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
