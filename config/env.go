@@ -9,7 +9,7 @@ type Env struct {
 	DbUser     string `env:"DB_USER" env-default:"postgres"`
 	DbPassword string `env:"DB_PASSWORD" env-default:"dp210go"`
 	DbName     string `env:"DB_NAME" env-default:"postgres"`
-	DbHost     string `env:"DB_HOST" env-default:"db"`
+	DbHost     string `env:"DB_HOST" env-default:"0.0.0.0"`
 	DbPort     string `env:"DB_PORT" env-default:"5432"`
 	DbParams   string `env:"DB_PARAMS" env-default:"sslmode=disable&timezone=utc"`
 
