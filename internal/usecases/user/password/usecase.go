@@ -11,11 +11,23 @@ type Usecases struct {
 	sender   EmailSender
 	codeGen  CodeGenerator
 	userRepo UsersRepository
+	codeRepo PasswordCodeRepository
+}
+
+type PasswordCodeRepository interface {
+	Create(ctx context.Context, c entity.PasswordCode) error
+	GetByEmail(ctx context.Context, email string) (entity.PasswordCode, error)
+	Delete(ctx context.Context, email string) error
 }
 
 // UsersRepository represent user repository.
 type UsersRepository interface {
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
+}
+
+type Cache interface {
+	Set(ctx context.Context, key, value string) error
+	Get(ctx context.Context, key string) (string, error)
 }
 
 type EmailSender interface {
@@ -27,11 +39,12 @@ type CodeGenerator interface {
 }
 
 // NewUsecases create new user usecases.
-func NewUsecases(es EmailSender, cg CodeGenerator, ur UsersRepository) *Usecases {
+func NewUsecases(es EmailSender, cg CodeGenerator, ur UsersRepository, cr PasswordCodeRepository) *Usecases {
 	return &Usecases{
 		sender:   es,
 		codeGen:  cg,
 		userRepo: ur,
+		codeRepo: cr,
 	}
 }
 
@@ -49,5 +62,23 @@ func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (
 		return code, fmt.Errorf("send restore code: %w", err)
 	}
 
+	pc := entity.PasswordCode{Email: email, Code: code}
+	if err := uc.codeRepo.Create(ctx, pc); err != nil {
+		return code, fmt.Errorf("save restore code: %w", err)
+	}
+
 	return code, nil
+}
+
+func (uc *Usecases) VerifyCode(ctx context.Context, pc entity.PasswordCode) error {
+	ent, err := uc.codeRepo.GetByEmail(ctx, pc.Email)
+	if err != nil {
+		return fmt.Errorf("passw code verify: %w", err)
+	}
+
+	if ent != pc {
+		return fmt.Errorf("no such code found: %v", pc)
+	}
+
+	return nil
 }
