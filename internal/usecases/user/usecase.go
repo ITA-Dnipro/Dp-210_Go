@@ -74,7 +74,12 @@ func (uc *Usecases) Delete(ctx context.Context, id string) error {
 
 // GetByID get single user by id.
 func (uc *Usecases) GetByID(ctx context.Context, id string) (entity.User, error) {
-	return uc.repo.GetByID(ctx, id)
+	u, err := uc.repo.GetByID(ctx, id)
+	if err != nil {
+		return u, err
+	}
+	u.PasswordHash = make([]byte, 0)
+	return u, err
 }
 
 // GetRoleByID get user permission role.
@@ -88,7 +93,15 @@ func (uc *Usecases) GetRoleByID(ctx context.Context, id string) (role.Role, erro
 
 // GetAll get all users.
 func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
-	return uc.repo.GetAll(ctx)
+	users, err := uc.repo.GetAll(ctx)
+	if err != nil {
+		return users, err
+	}
+	for _, u := range users {
+		u.PasswordHash = make([]byte, 0)
+	}
+
+	return users, err
 }
 
 // Authenticate user by email and password.
