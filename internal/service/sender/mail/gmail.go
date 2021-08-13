@@ -91,7 +91,7 @@ func getClient(config *oauth2.Config, tokFile string) (*http.Client, error) {
 			return nil, fmt.Errorf("get token from web: %w", err)
 		}
 		if err = saveToken(tokFile, tok); err != nil {
-			return nil, fmt.Errorf("save token: %w", err)
+			return nil, fmt.Errorf("save token to file %v: %w", tokFile, err)
 		}
 	}
 	return config.Client(context.Background(), tok), err
@@ -132,7 +132,10 @@ func saveToken(path string, token *oauth2.Token) error {
 	log.Printf("Saving credential file to: %s\n", path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return fmt.Errorf("cache oauth token: %w", err)
+		f, err = os.Create("token.json")
+		if err != nil {
+			return fmt.Errorf("cache oauth token: %w", err)
+		}
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
