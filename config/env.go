@@ -13,6 +13,9 @@ type Env struct {
 	DbPort     string `env:"DB_PORT" env-default:"5432"`
 	DbParams   string `env:"DB_PARAMS" env-default:"sslmode=disable&timezone=utc"`
 
+	RedisUrl      string `env:"REDIS_URL" env-default:"localhost:6379"`
+	RedisPassword string `env:"REDIS_PASSWORD" env-default:""`
+
 	AppHost string `env:"APP_HOST" env-default:"localhost"`
 	AppPort string `env:"APP_PORT" env-default:"8000"`
 }

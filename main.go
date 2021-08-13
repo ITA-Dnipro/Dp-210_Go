@@ -10,6 +10,7 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -53,6 +54,14 @@ func main() {
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     env.RedisUrl,
+		Password: env.RedisPassword,
+		DB:       0,
+	})
+
+	_ = rdb
 
 	r := router.NewRouter(db, logger)
 	// Start server
