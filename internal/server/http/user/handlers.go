@@ -10,6 +10,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
@@ -24,6 +25,7 @@ type UsersUsecases interface {
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
 	Authenticate(ctx context.Context, email, password string) (id string, err error)
+	ChangePassword(ctx context.Context, passw entity.UserNewPassword) error
 }
 
 type PasswordUsecases interface {
@@ -111,6 +113,36 @@ func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
 	h.paswCases.DeleteCode(r.Context(), req.Email)
 
 	h.render(w, tk)
+}
+
+func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var req entity.UserNewPassword
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "could not parse request", w)
+		return
+	}
+
+	var ok bool
+	if req.UserID, ok = middleware.FromContext(r.Context()); !ok {
+		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
+		return
+	}
+
+	if !isRequestValid(&req) {
+		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criterium", w)
+		return
+	}
+
+	if req.Password != req.PasswordConfirm {
+		h.writeErrorResponse(http.StatusBadRequest, "new password and new password confirm do not match", w)
+		return
+	}
+
+	if err := h.userCases.ChangePassword(r.Context(), req); err != nil {
+		h.writeErrorResponse(http.StatusForbidden, "wrong password", w)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // GetUsers Get all users.
@@ -213,7 +245,7 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	h.render(w, Message{"deleted"})
 }
 
-func isRequestValid(nu *entity.NewUser) bool {
+func isRequestValid(nu interface{}) bool {
 	validate := validator.New()
 	err := validate.Struct(nu)
 	fmt.Println(err)
