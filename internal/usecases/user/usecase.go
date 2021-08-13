@@ -115,6 +115,11 @@ func (uc *Usecases) ChangePassword(ctx context.Context, passw entity.UserNewPass
 		return fmt.Errorf("wrong password")
 	}
 
+	u.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(passw.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate password hash:%w", err)
+	}
+
 	if err := uc.repo.Update(ctx, &u); err != nil {
 		return fmt.Errorf("change password: %w", err)
 	}
