@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// UsersUsecases represent user usecases.
+// UsersUsecases represent user userCases.
 type UsersUsecases interface {
 	Create(ctx context.Context, u entity.NewUser) (string, error)
 	Update(ctx context.Context, u entity.NewUser) (entity.User, error)
@@ -24,8 +24,12 @@ type UsersUsecases interface {
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
 	Authenticate(ctx context.Context, email, password string) (id string, err error)
+}
 
-	SendRestorePasswordCode(ctx context.Context, email string) (string error)
+type PasswordUsecases interface {
+	SendRestorePasswordCode(ctx context.Context, email string) (string, error)
+	DeleteCode(ctx context.Context, email string) error
+	Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error)
 }
 
 const idKey = "id"
@@ -33,13 +37,14 @@ const tokenTime = time.Minute * 15
 
 // Handlers represent a user handlers.
 type Handlers struct {
-	usecases UsersUsecases
-	logger   *zap.Logger
+	userCases UsersUsecases
+	paswCases PasswordUsecases
+	logger    *zap.Logger
 }
 
 // NewHandlers create new user handlers.
 func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{usecases: uc, logger: log}
+	return &Handlers{userCases: uc, logger: log}
 }
 
 // GetToken by basic auth.
@@ -53,7 +58,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.usecases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	id, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
@@ -70,14 +75,14 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	h.render(w, tkn)
 }
 
-func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordRestoreReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "is not an email", w)
 		return
 	}
 
-	if err := h.usecases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
+	if _, err := h.paswCases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
 		h.writeErrorResponse(http.StatusAccepted, "your request failed", w)
 		return
 	}
@@ -85,9 +90,32 @@ func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
+	var req entity.PasswordCode
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "not a restore password data format", w)
+		return
+	}
+
+	uId, err := h.paswCases.Authenticate(r.Context(), req)
+	if err != nil {
+		h.writeErrorResponse(http.StatusForbidden, "authorization code is wrong", w)
+		return
+	}
+
+	tk, err := auth.CreateToken(uId, 10*time.Minute)
+	if err != nil {
+		h.writeErrorResponse(http.StatusInternalServerError, "could not generate token", w)
+	}
+
+	h.paswCases.DeleteCode(r.Context(), req.Email)
+
+	h.render(w, tk)
+}
+
 // GetUsers Get all users.
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.usecases.GetAll(r.Context())
+	users, err := h.userCases.GetAll(r.Context())
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -100,7 +128,7 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 // GetUser Get single user by id.
 func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
-	user, err := h.usecases.GetByID(r.Context(), id)
+	user, err := h.userCases.GetByID(r.Context(), id)
 	if err == nil {
 		h.render(w, user)
 		return
@@ -125,7 +153,7 @@ func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.usecases.Create(r.Context(), newUser)
+	id, err := h.userCases.Create(r.Context(), newUser)
 	if err != nil {
 		h.logger.Error("can't create a user", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
@@ -151,7 +179,7 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newUser.ID = id
-	user, err := h.usecases.Update(r.Context(), newUser)
+	user, err := h.userCases.Update(r.Context(), newUser)
 	if err != nil {
 		h.logger.Error("can't update a user", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
@@ -170,7 +198,7 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // DeleteUser deletes a user from storage
 func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
-	if err := h.usecases.Delete(r.Context(), id); err != nil {
+	if err := h.userCases.Delete(r.Context(), id); err != nil {
 		h.logger.Error("can't delete", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			h.writeErrorResponse(http.StatusNotFound,

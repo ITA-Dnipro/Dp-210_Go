@@ -52,8 +52,9 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/login", hs.GetToken) // POST /api/v1/login
 
-		r.Route("/password", func(r chi.Router) {
-			r.Post("/restore", hs.RestorePassword)
+		r.Route("/password/restore", func(r chi.Router) {
+			r.Post("/code/send", hs.SendRestorePasswordCode)
+			r.Post("/code/check", hs.CheckPasswordCode)
 		})
 
 		r.Post("/users", hs.CreateUser)   // POST /api/v1/users
