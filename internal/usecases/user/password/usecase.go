@@ -11,23 +11,18 @@ type Usecases struct {
 	sender   EmailSender
 	codeGen  CodeGenerator
 	userRepo UsersRepository
-	codeRepo PasswordCodeRepository
+	cache    Cache
 }
 
-type PasswordCodeRepository interface {
-	Create(ctx context.Context, c entity.PasswordCode) error
-	GetByEmail(ctx context.Context, email string) (entity.PasswordCode, error)
-	Delete(ctx context.Context, email string) error
-}
-
-// UsersRepository represent user repository.
 type UsersRepository interface {
+	UserExists(ctx context.Context, email string) bool
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
 }
 
 type Cache interface {
 	Set(ctx context.Context, key, value string) error
 	Get(ctx context.Context, key string) (string, error)
+	Del(ctx context.Context, key string) error
 }
 
 type EmailSender interface {
@@ -38,19 +33,18 @@ type CodeGenerator interface {
 	GenerateCode() (string, error)
 }
 
-// NewUsecases create new user usecases.
-func NewUsecases(es EmailSender, cg CodeGenerator, ur UsersRepository, cr PasswordCodeRepository) *Usecases {
+func NewUsecases(es EmailSender, cg CodeGenerator, ur UsersRepository, cache Cache) *Usecases {
 	return &Usecases{
 		sender:   es,
 		codeGen:  cg,
 		userRepo: ur,
-		codeRepo: cr,
+		cache:    cache,
 	}
 }
 
 func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (code string, err error) {
-	if _, err := uc.userRepo.GetByEmail(ctx, email); err != nil {
-		return "", fmt.Errorf("no such user with email %v; %w", email, err)
+	if !uc.userRepo.UserExists(ctx, email) {
+		return "", fmt.Errorf("no such user with email: %v", email)
 	}
 
 	code, err = uc.codeGen.GenerateCode()
@@ -58,27 +52,32 @@ func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (
 		return code, fmt.Errorf("send restore passw code: %w", err)
 	}
 
-	if err = uc.sender.Send(email, code); err != nil {
-		return code, fmt.Errorf("send restore code: %w", err)
+	if err := uc.cache.Set(ctx, email, code); err != nil {
+		return code, fmt.Errorf("save restore code: %w", err)
 	}
 
-	pc := entity.PasswordCode{Email: email, Code: code}
-	if err := uc.codeRepo.Create(ctx, pc); err != nil {
-		return code, fmt.Errorf("save restore code: %w", err)
+	if err = uc.sender.Send(email, code); err != nil {
+		uc.cache.Del(ctx, email)
+		return code, fmt.Errorf("send restore code: %w", err)
 	}
 
 	return code, nil
 }
 
-func (uc *Usecases) VerifyCode(ctx context.Context, pc entity.PasswordCode) error {
-	ent, err := uc.codeRepo.GetByEmail(ctx, pc.Email)
+func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error) {
+	ent, err := uc.cache.Get(ctx, pc.Email)
+	if err != nil || ent != pc.Code {
+		return "", fmt.Errorf("no such code found: %v", pc)
+	}
+
+	user, err := uc.userRepo.GetByEmail(ctx, pc.Email)
 	if err != nil {
-		return fmt.Errorf("passw code verify: %w", err)
+		return "", fmt.Errorf("auth via passw code, get user: %w", err)
 	}
 
-	if ent != pc {
-		return fmt.Errorf("no such code found: %v", pc)
-	}
+	return user.ID, nil
+}
 
-	return nil
+func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {
+	return fmt.Errorf("delete passw code: %w", uc.cache.Del(ctx, email))
 }
