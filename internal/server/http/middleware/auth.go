@@ -30,18 +30,18 @@ func (*Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := NewContext(r.Context(), uId)
+		ctx := contextWithToken(r.Context(), uId)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func NewContext(ctx context.Context, userId string) context.Context {
+func contextWithToken(ctx context.Context, userId string) context.Context {
 	return context.WithValue(ctx, KeyUserId, userId)
 }
 
-func FromContext(ctx context.Context) (string, bool) {
-	id, ok := ctx.Value(KeyUserId).(string)
-	return id, ok
+func FromContext(ctx context.Context) (userId string, ok bool) {
+	userId, ok = ctx.Value(KeyUserId).(string)
+	return userId, ok
 }
 
 func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
