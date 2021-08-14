@@ -3,16 +3,15 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"net/http"
-
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
-
 	"github.com/ilyakaznacheev/cleanenv"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
+	"log"
+	"net/http"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 const (
@@ -30,8 +29,9 @@ func main() {
 		log.Fatal(fmt.Errorf("read env: %w", err))
 	}
 
-	var config config.Config
-	err = cleanenv.ReadConfig(configPath, &config)
+	// Variable 'config' collides with imported package name config -> cfg.
+	var cfg config.Config
+	err = cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
 		log.Fatal(fmt.Errorf("read config: %w", err))
 	}
