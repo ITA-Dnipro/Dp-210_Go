@@ -1,0 +1,2 @@
+FirstName,LastName,Email,Gender(male/female),BirthDay,Phone,Address,JobInfo,Disability(yes/no),Allergies(yes/no)
+Ivan,Petrov,ipetrov@gmail.com,male123,1995-05-01,0971234567,"Volodymyrska St, 33, Kyiv, 02000","IBM, Engineer",no,yes
