@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Usecases struct {
@@ -17,6 +18,8 @@ type Usecases struct {
 type UsersRepository interface {
 	UserExists(ctx context.Context, email string) bool
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
+	Update(ctx context.Context, u *entity.User) error
+	GetByID(ctx context.Context, id string) (entity.User, error)
 }
 
 type Cache interface {
@@ -80,4 +83,27 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (s
 
 func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {
 	return fmt.Errorf("delete passw code: %w", uc.cache.Del(ctx, email))
+}
+
+func (uc *Usecases) ChangePassword(ctx context.Context, passw entity.UserNewPassword) error {
+
+	u, err := uc.userRepo.GetByID(ctx, passw.UserID)
+	if err != nil {
+		return fmt.Errorf("change password userId: %v, %w", passw.UserID, err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(passw.OldPassword)); err != nil {
+		return fmt.Errorf("wrong password")
+	}
+
+	u.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(passw.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("generate password hash:%w", err)
+	}
+
+	if err := uc.userRepo.Update(ctx, &u); err != nil {
+		return fmt.Errorf("change password: %w", err)
+	}
+
+	return nil
 }

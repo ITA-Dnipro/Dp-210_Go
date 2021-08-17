@@ -103,26 +103,3 @@ func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (i
 
 	return u.ID, nil
 }
-
-func (uc *Usecases) ChangePassword(ctx context.Context, passw entity.UserNewPassword) error {
-
-	u, err := uc.repo.GetByID(ctx, passw.UserID)
-	if err != nil {
-		return fmt.Errorf("change password userId: %v, %w", passw.UserID, err)
-	}
-
-	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(passw.OldPassword)); err != nil {
-		return fmt.Errorf("wrong password")
-	}
-
-	u.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(passw.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("generate password hash:%w", err)
-	}
-
-	if err := uc.repo.Update(ctx, &u); err != nil {
-		return fmt.Errorf("change password: %w", err)
-	}
-
-	return nil
-}
