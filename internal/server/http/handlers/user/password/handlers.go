@@ -24,12 +24,6 @@ func NewHandler(paswCases PasswordUsecases, logger *zap.Logger) *Handlers {
 	}
 }
 
-type UsersUsecases interface {
-	// Update(ctx context.Context, u entity.NewUser) (entity.User, error)
-	// GetByID(ctx context.Context, id string) (entity.User, error)
-	// UserExists(ctx context.Context, email string) bool
-}
-
 type PasswordUsecases interface {
 	SendRestorePasswordCode(ctx context.Context, email string) (code string, err error)
 	Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error)
