@@ -139,5 +139,5 @@ func (r *Repository) GetAll(ctx context.Context) (res []entity.User, err error) 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("encountered during iteration %w", err)
 	}
-	return
+	return res, nil
 }
