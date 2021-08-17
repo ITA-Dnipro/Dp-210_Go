@@ -30,8 +30,8 @@ func main() {
 		log.Fatal(fmt.Errorf("read env: %w", err))
 	}
 
-	var config config.Config
-	err = cleanenv.ReadConfig(configPath, &config)
+	var cfg config.Config
+	err = cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
 		log.Fatal(fmt.Errorf("read config: %w", err))
 	}
@@ -45,7 +45,7 @@ func main() {
 	}
 	err = db.Ping()
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		log.Fatal(fmt.Errorf("ping db %s : %w", env.DatabaseStr(), err))
 	}
 
