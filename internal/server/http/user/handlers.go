@@ -10,7 +10,6 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
@@ -25,13 +24,6 @@ type UsersUsecases interface {
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
 	Authenticate(ctx context.Context, email, password string) (id string, err error)
-	ChangePassword(ctx context.Context, passw entity.UserNewPassword) error
-}
-
-type PasswordUsecases interface {
-	SendRestorePasswordCode(ctx context.Context, email string) (string, error)
-	DeleteCode(ctx context.Context, email string) error
-	Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error)
 }
 
 const idKey = "id"
@@ -40,7 +32,6 @@ const tokenTime = time.Minute * 15
 // Handlers represent a user handlers.
 type Handlers struct {
 	userCases UsersUsecases
-	paswCases PasswordUsecases
 	logger    *zap.Logger
 }
 
@@ -75,74 +66,6 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("ger all request succeeded")
 	h.render(w, tkn)
-}
-
-func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
-	var req entity.PasswordRestoreReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "is not an email", w)
-		return
-	}
-
-	if _, err := h.paswCases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
-		h.writeErrorResponse(http.StatusAccepted, "your request failed", w)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
-	var req entity.PasswordCode
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "not a restore password data format", w)
-		return
-	}
-
-	uId, err := h.paswCases.Authenticate(r.Context(), req)
-	if err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "authorization code is wrong", w)
-		return
-	}
-
-	tk, err := auth.CreateToken(uId, 10*time.Minute)
-	if err != nil {
-		h.writeErrorResponse(http.StatusInternalServerError, "could not generate token", w)
-	}
-
-	h.paswCases.DeleteCode(r.Context(), req.Email)
-
-	h.render(w, tk)
-}
-
-func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	var req entity.UserNewPassword
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "could not parse request", w)
-		return
-	}
-
-	var ok bool
-	if req.UserID, ok = middleware.FromContext(r.Context()); !ok {
-		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
-		return
-	}
-
-	if !isRequestValid(&req) {
-		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criterium", w)
-		return
-	}
-
-	if req.Password != req.PasswordConfirm {
-		h.writeErrorResponse(http.StatusBadRequest, "new password and new password confirm do not match", w)
-		return
-	}
-
-	if err := h.userCases.ChangePassword(r.Context(), req); err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "wrong password", w)
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // GetUsers Get all users.
