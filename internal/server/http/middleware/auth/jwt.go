@@ -79,7 +79,16 @@ func (auth *JwtAuth) CreateToken(userId string) (JwtToken, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+
 	t, err := token.SignedString(auth.signKey)
+	if err != nil {
+		return "", fmt.Errorf("sign token: %w", err)
+	}
+
+	if err = auth.Cache.Set(userId, t); err != nil {
+		return "", fmt.Errorf("save token for: %v; %w", userId, err)
+	}
+
 	return JwtToken(t), err
 }
 
@@ -101,7 +110,24 @@ func (auth *JwtAuth) ValidateToken(t JwtToken) (string, error) {
 		return "", ErrInvalidTokenStructure
 	}
 
+	if err := auth.validateInStorage(t, claims.UserId); err != nil {
+		return "", err
+	}
+
 	return claims.UserId, nil
+}
+
+func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
+	tk, err := auth.Cache.Get(userId)
+	if err != nil {
+		return fmt.Errorf("user %v logged out", userId)
+	}
+
+	if JwtToken(tk) != t {
+		return fmt.Errorf("no such token for user %v", userId)
+	}
+
+	return nil
 }
 
 type AuthClaims struct {
