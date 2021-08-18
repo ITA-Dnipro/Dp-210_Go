@@ -34,17 +34,18 @@ type JwtToken string
 type Cache interface {
 	Get(key string) (string, error)
 	Set(key, value string) error
+	Del(key string) error
 }
 
 type JwtAuth struct {
 	Cache     Cache
-	lifetime  time.Duration
+	Lifetime  time.Duration
 	verifyKey *rsa.PublicKey
 	signKey   *rsa.PrivateKey
 }
 
-func NewJwtAuth(cache Cache) *JwtAuth {
-	auth := JwtAuth{Cache: cache}
+func NewJwtAuth(cache Cache, lifetime time.Duration) *JwtAuth {
+	auth := JwtAuth{Cache: cache, Lifetime: lifetime}
 	if err := auth.initializeAuthKeys(); err != nil {
 		panic(err)
 	}
@@ -69,7 +70,7 @@ func (auth *JwtAuth) initializeAuthKeys() error {
 
 func (auth *JwtAuth) CreateToken(userId string) (JwtToken, error) {
 	now := time.Now()
-	tomorrow := now.Add(auth.lifetime)
+	tomorrow := now.Add(auth.Lifetime)
 	claims := &AuthClaims{
 		userId,
 		jwt.StandardClaims{
@@ -115,6 +116,14 @@ func (auth *JwtAuth) ValidateToken(t JwtToken) (string, error) {
 	}
 
 	return claims.UserId, nil
+}
+
+func (auth *JwtAuth) InvalidateToken(userId string) error {
+	if err := auth.Cache.Del(userId); err != nil {
+		return fmt.Errorf("invalidate token: %w", err)
+	}
+
+	return nil
 }
 
 func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
