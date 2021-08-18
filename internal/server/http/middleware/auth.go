@@ -14,7 +14,7 @@ var (
 	KeyUserId = contextKey("userId")
 )
 
-func (*Middleware) AuthMiddleware(next http.Handler) http.Handler {
+func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t, ok := tokenfromRequest(r)
 		if !ok {
@@ -23,7 +23,7 @@ func (*Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		uId, err := auth.ValidateToken(t)
+		uId, err := m.Auth.ValidateToken(t)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))

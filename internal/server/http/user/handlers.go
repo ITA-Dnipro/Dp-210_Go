@@ -33,6 +33,11 @@ const tokenTime = time.Minute * 15
 type Handlers struct {
 	userCases UsersUsecases
 	logger    *zap.Logger
+	auth      Auth
+}
+
+type Auth interface {
+	CreateToken(uid string) (auth.JwtToken, error)
 }
 
 // NewHandlers create new user handlers.
@@ -59,7 +64,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	var tkn struct {
 		Token auth.JwtToken `json:"token"`
 	}
-	tkn.Token, err = auth.CreateToken(id, tokenTime)
+	tkn.Token, err = h.auth.CreateToken(id)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return

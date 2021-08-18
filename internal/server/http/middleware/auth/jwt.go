@@ -23,42 +23,53 @@ emkBheE4h+PxAiEAnRdtsanAYKYLB0hJRSCcaDW8GaboYXIgoT2WO5yhrFcCIBkg
 URG/h+mR4G6J7qPdHN2S8wK7WyqJx3TiH/nwVK+t
 -----END RSA PRIVATE KEY-----`
 
-type JwtToken string
-
-var (
-	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
-)
-
 var (
 	ErrInvalidToken          = jwt.NewValidationError("invalid token", 20)
 	ErrInvalidTokenStructure = jwt.NewValidationError("invalid token structure", 21)
 	ErrTokenExpired          = jwt.NewValidationError("token expired", 21)
 )
 
-func init() {
-	InitializeAuthKeys()
+type JwtToken string
+
+type Cache interface {
+	Get(key string) (string, error)
+	Set(key, value string) error
 }
 
-func InitializeAuthKeys() error {
+type JwtAuth struct {
+	Cache     Cache
+	lifetime  time.Duration
+	verifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
+}
+
+func NewJwtAuth(cache Cache) *JwtAuth {
+	auth := JwtAuth{Cache: cache}
+	if err := auth.initializeAuthKeys(); err != nil {
+		panic(err)
+	}
+	return &auth
+}
+
+func (auth *JwtAuth) initializeAuthKeys() error {
 	sk, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth private: %w", err)
 	}
-	signKey = sk
+	auth.signKey = sk
 
 	vk, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth public: %w", err)
 	}
-	verifyKey = vk
+	auth.verifyKey = vk
 
 	return nil
 }
 
-func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
+func (auth *JwtAuth) CreateToken(userId string) (JwtToken, error) {
 	now := time.Now()
-	tomorrow := now.Add(lifetime)
+	tomorrow := now.Add(auth.lifetime)
 	claims := &AuthClaims{
 		userId,
 		jwt.StandardClaims{
@@ -68,13 +79,13 @@ func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	t, err := token.SignedString(signKey)
+	t, err := token.SignedString(auth.signKey)
 	return JwtToken(t), err
 }
 
-func ValidateToken(t JwtToken) (string, error) {
+func (auth *JwtAuth) ValidateToken(t JwtToken) (string, error) {
 	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return verifyKey, nil
+		return auth.verifyKey, nil
 	})
 
 	if err != nil {
