@@ -33,7 +33,8 @@ func (r *Repository) Create(ctx context.Context, u entity.User) error {
 		u.Name,
 		u.Email,
 		u.PermissionRole,
-		u.PasswordHash)
+		u.PasswordHash,
+	)
 	if err != nil {
 		return fmt.Errorf("store error: %w", err)
 	}
@@ -52,8 +53,8 @@ func (r *Repository) Create(ctx context.Context, u entity.User) error {
 
 // Update updates a user
 func (r *Repository) Update(ctx context.Context, u *entity.User) error {
-	query := `UPDATE users SET  name=$2, email=$3, password_hash=$4 WHERE id=$1`
-	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Name, &u.Email, &u.PasswordHash)
+	query := `UPDATE users SET  name=$2, email=$3, role=$4 WHERE id=$1`
+	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Name, &u.Email, &u.PermissionRole)
 	if err != nil {
 		return fmt.Errorf("update error: %w", err)
 	}
@@ -116,7 +117,7 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User,
 
 // GetAll get all users.
 func (r *Repository) GetAll(ctx context.Context) (res []entity.User, err error) {
-	query := `SELECT id, name, email, role FROM users ORDER BY name`
+	query := `SELECT id, name, email, role FROM users ORDER BY role`
 	rows, err := r.storage.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)

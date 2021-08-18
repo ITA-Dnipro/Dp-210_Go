@@ -19,7 +19,7 @@ import (
 // UsersUsecases represent user usecases.
 type UsersUsecases interface {
 	Create(ctx context.Context, u entity.NewUser) (string, error)
-	Update(ctx context.Context, u entity.NewUser) (entity.User, error)
+	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
@@ -123,23 +123,22 @@ func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
 
-	var newUser entity.NewUser
-	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
+	var u entity.User
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
 		return
 	}
 
-	if ok := isRequestValid(&newUser); !ok {
+	if ok := isUserRequestValid(&u); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	newUser.ID = id
-	user, err := h.usecases.Update(r.Context(), newUser)
-	if err != nil {
+	u.ID = id
+	if err := h.usecases.Update(r.Context(), &u); err != nil {
 		h.logger.Error("can't update a user", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			h.writeErrorResponse(http.StatusNotFound,
-				fmt.Sprintf("can't find a user with %v id", newUser.ID), w)
+				fmt.Sprintf("can't find a user with %v id", u.ID), w)
 			return
 		}
 
@@ -147,7 +146,7 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, user)
+	h.render(w, u)
 }
 
 // DeleteUser deletes a user from storage
@@ -169,6 +168,13 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func isRequestValid(nu *entity.NewUser) bool {
+	validate := validator.New()
+	err := validate.Struct(nu)
+	fmt.Println(err)
+	return err == nil
+}
+
+func isUserRequestValid(nu *entity.User) bool {
 	validate := validator.New()
 	err := validate.Struct(nu)
 	fmt.Println(err)

@@ -52,18 +52,8 @@ func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, erro
 }
 
 // Update updates a user
-func (uc *Usecases) Update(ctx context.Context, nu entity.NewUser) (entity.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return entity.User{}, fmt.Errorf("generate password hash:%w", err)
-	}
-	u := entity.User{
-		ID:           nu.ID,
-		Name:         nu.Name,
-		Email:        nu.Email,
-		PasswordHash: hash,
-	}
-	return u, uc.repo.Update(ctx, &u)
+func (uc *Usecases) Update(ctx context.Context, u *entity.User) error {
+	return uc.repo.Update(ctx, u)
 }
 
 // Delete deletes a user from storage
