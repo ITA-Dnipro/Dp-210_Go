@@ -3,16 +3,21 @@ package router
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	codeRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore/code"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	handlePasw "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user/password"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
+	jwt "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 	usecasesPasw "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user/password"
+
+	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/memory"
+
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
@@ -30,14 +35,22 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 
 	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, codeRepo.NewCache(db))
 
-	hs := handlers.NewHandlers(usecase, logger)
+	c := cache.NewJwtCache()
+	auth := jwt.NewJwtAuth(c, 15*time.Minute)
+
+	hs := handlers.NewHandlers(usecase, logger, auth)
 	paswHandler := handlePasw.NewHandler(paswCase, logger)
-	md := &middleware.Middleware{Logger: logger, UserUC: usecase}
+	md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/login", hs.GetToken) // POST /api/v1/login
+
+		r.Group(func(r chi.Router) {
+			r.Use(md.AuthMiddleware)
+			r.Post("/logout", hs.LogOut)
+		})
 
 		r.Route("/password", func(r chi.Router) {
 			r.Route("/restore", func(r chi.Router) {
@@ -47,7 +60,6 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 
 			r.Group(func(r chi.Router) {
 				r.Use(md.AuthMiddleware)
-
 				r.Post("/change", paswHandler.ChangePassword)
 			})
 		})

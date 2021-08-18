@@ -10,6 +10,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
+	md "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
@@ -38,11 +39,12 @@ type Handlers struct {
 
 type Auth interface {
 	CreateToken(uid string) (auth.JwtToken, error)
+	InvalidateToken(uid string) error
 }
 
 // NewHandlers create new user handlers.
-func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{userCases: uc, logger: log}
+func NewHandlers(uc UsersUsecases, log *zap.Logger, auth Auth) *Handlers {
+	return &Handlers{userCases: uc, logger: log, auth: auth}
 }
 
 // GetToken by basic auth.
@@ -71,6 +73,22 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Info("ger all request succeeded")
 	h.render(w, tkn)
+}
+
+func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
+	uId, ok := md.FromContext(r.Context())
+	if !ok {
+		h.writeErrorResponse(http.StatusUnauthorized, "no such session", w)
+		return
+	}
+
+	if err := h.auth.InvalidateToken(uId); err != nil {
+		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", uId, err))
+		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // GetUsers Get all users.
