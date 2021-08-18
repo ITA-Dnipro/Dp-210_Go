@@ -24,7 +24,7 @@ type GmailEmailSender struct {
 }
 
 func NewGmailEmailSender(credPath, tokFile string) (*GmailEmailSender, error) {
-	ges := GmailEmailSender{CredentialsPath: credPath}
+	ges := GmailEmailSender{CredentialsPath: credPath, TokenPath: tokFile}
 	err := ges.InitializeService()
 	if err != nil {
 		return nil, err
@@ -85,6 +85,7 @@ func getClient(config *oauth2.Config, tokFile string) (*http.Client, error) {
 	// time.
 
 	tok, err := tokenFromFile(tokFile)
+	log.Println(fmt.Errorf("get token from file %v, %w", tokFile, err))
 	if err != nil {
 		tok, err = getTokenFromWeb(config)
 		if err != nil {
@@ -100,7 +101,7 @@ func getClient(config *oauth2.Config, tokFile string) (*http.Client, error) {
 // Request a token from the web, then returns the retrieved token.
 func getTokenFromWeb(config *oauth2.Config) (*oauth2.Token, error) {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
+	log.Printf("Go to the following link in your browser then type the "+
 		"authorization code: \n%v\n", authURL)
 
 	var authCode string
@@ -116,8 +117,8 @@ func getTokenFromWeb(config *oauth2.Config) (*oauth2.Token, error) {
 	return tok, nil
 }
 
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
+func tokenFromFile(path string) (*oauth2.Token, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
