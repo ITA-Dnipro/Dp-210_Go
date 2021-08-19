@@ -58,7 +58,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("appointment has been created", zap.String(idKey, a.ID))
+	h.logger.Info("user has been created", zap.String(idKey, a.ID))
 	h.render(w, a)
 }
 

@@ -12,7 +12,7 @@ import (
 
 // UsersRepository represent user repository.
 type UsersRepository interface {
-	Create(ctx context.Context, u entity.User) error
+	Create(ctx context.Context, u *entity.User) error
 	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
@@ -33,22 +33,15 @@ type Usecases struct {
 }
 
 // Create Add new user
-func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
+func (uc *Usecases) Create(ctx context.Context, u *entity.User) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte([]byte(u.PasswordHash)), bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("generate password hash:%w", err)
+		return fmt.Errorf("generate password hash:%w", err)
 	}
-
-	id := uuid.New().String()
-
-	u := entity.User{
-		ID:             id,
-		Name:           nu.Name,
-		Email:          nu.Email,
-		PermissionRole: role.Viewer,
-		PasswordHash:   hash,
-	}
-	return id, uc.repo.Create(ctx, u)
+	u.ID = uuid.New().String()
+	u.PermissionRole = role.Viewer
+	u.PasswordHash = string(hash)
+	return uc.repo.Create(ctx, u)
 }
 
 // Update updates a user
@@ -86,7 +79,7 @@ func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (i
 	if err != nil {
 		return "", fmt.Errorf("authenticate get user by email:%w", err)
 	}
-	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
 		return "", fmt.Errorf("authentication failed:%w", err)
 	}
 

@@ -24,7 +24,7 @@ type Repository struct {
 }
 
 // Create Add new user
-func (r *Repository) Create(ctx context.Context, u entity.User) error {
+func (r *Repository) Create(ctx context.Context, u *entity.User) error {
 	query := `INSERT INTO users (id, name, email, role, password_hash) 
               VALUES ( $1, $2, $3, $4, $5)`
 	res, err := r.storage.ExecContext(ctx,

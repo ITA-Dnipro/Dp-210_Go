@@ -42,7 +42,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	dh := doctorHandlers.NewHandlers(dc, logger)
 	ah := appointmentHandlers.NewHandlers(ac, logger)
 
-	md := &middleware.Middleware{Logger: logger, UserUC: uc}
+	md := &middleware.Middleware{Logger: logger, UR: ur}
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)

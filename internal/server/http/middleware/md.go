@@ -5,17 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"go.uber.org/zap"
 )
 
-type UserUsecases interface {
-	GetRoleByID(ctx context.Context, id string) (role.Role, error)
+// UsersRepository represent user repository.
+type UsersRepository interface {
+	GetByID(ctx context.Context, id string) (entity.User, error)
 }
 
 type Middleware struct {
 	Logger *zap.Logger
-	UserUC UserUsecases
+	UR     UsersRepository
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
@@ -38,8 +40,8 @@ func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.H
 			ctx := r.Context()
 			id, ok := FromContext(ctx)
 			if ok {
-				rl, err := m.UserUC.GetRoleByID(ctx, id)
-				if err == nil && role.IsAllowedRole(rl, roles) {
+				u, err := m.UR.GetByID(ctx, id)
+				if err == nil && role.IsAllowedRole(role.Role(u.PermissionRole), roles) {
 					next.ServeHTTP(w, r)
 					return
 				}
