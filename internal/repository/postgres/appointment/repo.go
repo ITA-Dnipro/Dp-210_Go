@@ -105,14 +105,20 @@ func (r *Repository) GetAll(ctx context.Context) ([]entity.Appointment, error) {
 	return r.fetch(ctx, query)
 }
 
+//GetByPatientID get all appointments by patient id.
+func (r *Repository) GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error) {
+	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE patient_id = $1 ORDER BY lower(time_range)`
+	return r.fetch(ctx, query, id)
+}
+
 //GetByDoctorID get all appointments by doctor id.
 func (r *Repository) GetByDoctorID(ctx context.Context, id string) ([]entity.Appointment, error) {
 	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE doctor_id = $1 ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, id)
 }
 
-//GetByPatientID get all appointments by patient id.
-func (r *Repository) GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error) {
-	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE parient_id = $1 ORDER BY lower(time_range)`
+//GetByDoctorID get all appointments by user id.
+func (r *Repository) GetByUserID(ctx context.Context, id string) ([]entity.Appointment, error) {
+	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE doctor_id = $1 OR patient_id = $1 ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, id)
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/google/uuid"
 )
 
@@ -13,6 +12,7 @@ import (
 type AppointmentsRepository interface {
 	GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error)
 	GetByDoctorID(ctx context.Context, id string) ([]entity.Appointment, error)
+	GetByUserID(ctx context.Context, id string) ([]entity.Appointment, error)
 	Create(ctx context.Context, a *entity.Appointment) error
 	GetAll(ctx context.Context) ([]entity.Appointment, error)
 	Delete(ctx context.Context, id string) error
@@ -67,14 +67,8 @@ func (uc *Usecases) GetByPatientID(ctx context.Context, id string) ([]entity.App
 }
 
 // GetByUser get appointmens by user.
-func (uc *Usecases) GetByUser(ctx context.Context, userID string, userRole role.Role) ([]entity.Appointment, error) {
-	if userRole == role.Doctor {
-		return uc.ar.GetByDoctorID(ctx, userID)
-	}
-	if userRole == role.Patient {
-		return uc.ar.GetByPatientID(ctx, userID)
-	}
-	return []entity.Appointment{}, nil
+func (uc *Usecases) GetByUser(ctx context.Context, id string) ([]entity.Appointment, error) {
+	return uc.ar.GetByUserID(ctx, id)
 }
 
 // GetAll get all appointments.
