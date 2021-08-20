@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"go.uber.org/zap"
 )
 
@@ -13,9 +14,14 @@ type UserUsecases interface {
 	GetRoleByID(ctx context.Context, id string) (role.Role, error)
 }
 
+type Auth interface {
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+}
+
 type Middleware struct {
 	Logger *zap.Logger
 	UserUC UserUsecases
+	Auth   Auth
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {

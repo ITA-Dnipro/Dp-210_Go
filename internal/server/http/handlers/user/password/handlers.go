@@ -8,21 +8,27 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"go.uber.org/zap"
 )
 
 const tokLifetime = 10 * time.Minute
 
+type Auth interface {
+	CreateToken(user authPkg.UserAuth, lifetime time.Duration) (authPkg.JwtToken, error)
+}
+
 type Handlers struct {
 	paswCases PasswordUsecases
 	logger    *zap.Logger
+	auth      Auth
 }
 
-func NewHandler(paswCases PasswordUsecases, logger *zap.Logger) *Handlers {
+func NewHandler(paswCases PasswordUsecases, logger *zap.Logger, auth Auth) *Handlers {
 	return &Handlers{
 		paswCases: paswCases,
 		logger:    logger,
+		auth:      auth,
 	}
 }
 
@@ -61,7 +67,7 @@ func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tk, err := auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole}, tokLifetime)
+	tk, err := h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole}, tokLifetime)
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, "could not generate token", w)
 	}

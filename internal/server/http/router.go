@@ -2,12 +2,14 @@ package router
 
 import (
 	"database/sql"
+	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
+	restore "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	handlePasw "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user/password"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
@@ -16,8 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type Auth interface {
+	CreateToken(user auth.UserAuth, lifetime time.Duration) (auth.JwtToken, error)
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+}
+
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender) chi.Router {
+func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, auth Auth) chi.Router {
 	repo := postgres.NewRepository(db)
 	usecase := usecases.NewUsecases(repo)
 
@@ -25,8 +32,8 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender) chi
 
 	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, restore.NewCodeRepo(db))
 
-	hs := handlers.NewHandlers(usecase, logger)
-	paswHandler := handlePasw.NewHandler(paswCase, logger)
+	hs := handlers.NewHandlers(usecase, logger, auth)
+	paswHandler := handlePasw.NewHandler(paswCase, logger, auth)
 	md := &middleware.Middleware{Logger: logger, UserUC: usecase}
 
 	r := chi.NewRouter()

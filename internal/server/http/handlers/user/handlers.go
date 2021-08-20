@@ -10,7 +10,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
-	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
@@ -26,6 +26,10 @@ type UsersUsecases interface {
 	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
 }
 
+type Auth interface {
+	CreateToken(user authPkg.UserAuth, lifetime time.Duration) (authPkg.JwtToken, error)
+}
+
 const idKey = "id"
 const tokenTime = time.Minute * 15
 
@@ -33,11 +37,12 @@ const tokenTime = time.Minute * 15
 type Handlers struct {
 	userCases UsersUsecases
 	logger    *zap.Logger
+	auth      Auth
 }
 
 // NewHandlers create new user handlers.
-func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{userCases: uc, logger: log}
+func NewHandlers(uc UsersUsecases, log *zap.Logger, auth Auth) *Handlers {
+	return &Handlers{userCases: uc, logger: log, auth: auth}
 }
 
 // GetToken by basic auth.
@@ -57,9 +62,9 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var tkn struct {
-		Token auth.JwtToken `json:"token"`
+		Token authPkg.JwtToken `json:"token"`
 	}
-	tkn.Token, err = auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole}, tokenTime)
+	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole}, tokenTime)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return

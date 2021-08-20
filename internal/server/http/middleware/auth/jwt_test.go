@@ -10,6 +10,11 @@ import (
 )
 
 func TestCreateValidateToken(t *testing.T) {
+	auth, err := NewAuthJwt()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tts := []struct {
 		id      string
 		role    role.Role
@@ -21,11 +26,11 @@ func TestCreateValidateToken(t *testing.T) {
 		{"2", role.Operator, time.Second * 2, time.Second, false},
 	}
 	for _, tt := range tts {
-		token, err := CreateToken(UserAuth{Id: tt.id, Role: tt.role}, tt.expires)
+		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role}, tt.expires)
 		assert.Nil(t, err)
 		time.Sleep(tt.wait)
 
-		u, err := ValidateToken(token)
+		u, err := auth.ValidateToken(token)
 		assert.Equal(t, tt.err, err != nil)
 		if !tt.err {
 			assert.EqualValues(t, tt.id, u.Id)
