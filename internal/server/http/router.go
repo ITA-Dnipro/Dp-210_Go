@@ -3,7 +3,7 @@ package router
 import (
 	"database/sql"
 
-	codeRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore/code"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	handlePasw "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user/password"
@@ -23,7 +23,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender) chi
 
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
-	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, codeRepo.NewCache(db))
+	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, restore.NewCodeRepo(db))
 
 	hs := handlers.NewHandlers(usecase, logger)
 	paswHandler := handlePasw.NewHandler(paswCase, logger)
