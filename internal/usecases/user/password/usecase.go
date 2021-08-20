@@ -67,18 +67,18 @@ func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (
 	return code, nil
 }
 
-func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error) {
+func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (entity.User, error) {
 	ent, err := uc.cache.Get(ctx, pc.Email)
 	if err != nil || ent != pc.Code {
-		return "", fmt.Errorf("no such code found: %v", pc)
+		return entity.User{}, fmt.Errorf("no such code found: %v", pc)
 	}
 
 	user, err := uc.userRepo.GetByEmail(ctx, pc.Email)
 	if err != nil {
-		return "", fmt.Errorf("auth via passw code, get user: %w", err)
+		return entity.User{}, fmt.Errorf("auth via passw code, get user: %w", err)
 	}
 
-	return user.ID, nil
+	return user, nil
 }
 
 func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {

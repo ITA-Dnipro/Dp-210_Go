@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/golang-jwt/jwt"
 )
 
@@ -56,11 +58,12 @@ func InitializeAuthKeys() error {
 	return nil
 }
 
-func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
+func CreateToken(user UserAuth, lifetime time.Duration) (JwtToken, error) {
 	now := time.Now()
 	tomorrow := now.Add(lifetime)
 	claims := &AuthClaims{
-		userId,
+		user.Id,
+		user.Role,
 		jwt.StandardClaims{
 			IssuedAt:  now.Unix(),
 			ExpiresAt: tomorrow.Unix(),
@@ -72,28 +75,39 @@ func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
 	return JwtToken(t), err
 }
 
-func ValidateToken(t JwtToken) (string, error) {
+func ValidateToken(t JwtToken) (UserAuth, error) {
 	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return verifyKey, nil
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("validateToken: %w", err)
+		return UserAuth{}, fmt.Errorf("validateToken: %w", err)
 	}
 
 	if !token.Valid {
-		return "", ErrInvalidToken
+		return UserAuth{}, ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*AuthClaims)
 	if !ok {
-		return "", ErrInvalidTokenStructure
+		return UserAuth{}, ErrInvalidTokenStructure
 	}
 
-	return claims.UserId, nil
+	u := UserAuth{
+		Id:   claims.UserId,
+		Role: claims.UserRole,
+	}
+
+	return u, nil
 }
 
 type AuthClaims struct {
-	UserId string
+	UserId   string
+	UserRole role.Role
 	jwt.StandardClaims
+}
+
+type UserAuth struct {
+	Id   string
+	Role role.Role
 }

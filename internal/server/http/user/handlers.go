@@ -23,7 +23,7 @@ type UsersUsecases interface {
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (id string, err error)
+	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
 }
 
 const idKey = "id"
@@ -51,7 +51,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
@@ -59,7 +59,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	var tkn struct {
 		Token auth.JwtToken `json:"token"`
 	}
-	tkn.Token, err = auth.CreateToken(id, tokenTime)
+	tkn.Token, err = auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole}, tokenTime)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
