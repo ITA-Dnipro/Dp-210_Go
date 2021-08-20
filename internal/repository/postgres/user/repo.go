@@ -52,8 +52,8 @@ func (r *Repository) Create(ctx context.Context, u entity.User) error {
 
 // Update updates a user
 func (r *Repository) Update(ctx context.Context, u *entity.User) error {
-	query := `UPDATE users SET  name=$2, email=$3, password_hash=$4 WHERE id=$1`
-	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Name, &u.Email, &u.PasswordHash)
+	query := `UPDATE users SET  name=$2, email=$3, role=$4 WHERE id=$1`
+	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Name, &u.Email, &u.PermissionRole)
 	if err != nil {
 		return fmt.Errorf("update error: %w", err)
 	}

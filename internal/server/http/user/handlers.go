@@ -17,13 +17,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewUser represent new user in request.
+type RequestUser struct {
+	ID              string `json:"id" validate:"omitempty"`
+	Name            string `json:"name,omitempty" validate:"omitempty"`
+	Email           string `json:"email" validate:"required,email"`
+	Password        string `json:"password" validate:"required"`
+	PasswordConfirm string `json:"password_confirm" validate:"omitempty,eqfield=Password"`
+}
+
 // UsersUsecases represent user userCases.
 type UsersUsecases interface {
-	Create(ctx context.Context, u entity.NewUser) (string, error)
-	Update(ctx context.Context, u entity.NewUser) (entity.User, error)
+	Create(ctx context.Context, u *entity.User) error
+	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
+
 	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
 }
 
@@ -121,24 +131,29 @@ func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
 
 // CreateUser Add new user
 func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var newUser entity.NewUser
-	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
+	var ru RequestUser
+	if err := json.NewDecoder(r.Body).Decode(&ru); err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
 		return
 	}
-	if ok := isRequestValid(&newUser); !ok {
+	if ok := isRequestValid(&ru); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.userCases.Create(r.Context(), newUser)
+
+	u := entity.User{
+		Name:         ru.Name,
+		Email:        ru.Email,
+		PasswordHash: ru.Password,
+	}
+	id, err := h.userCases.Create(r.Context(), &u)
 	if err != nil {
 		h.logger.Error("can't create a user", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	newUser.ID = id
-	h.logger.Info("user has been created", zap.String(idKey, id))
-	h.render(w, newUser)
+	h.logger.Info("user has been created", zap.String(idKey, u.ID))
+	h.render(w, u)
 }
 
 // UpdateUser updates a user
