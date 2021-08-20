@@ -9,6 +9,8 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -39,6 +41,16 @@ func main() {
 
 	logger, _ := zap.NewProduction()
 
+	gmail, err := mail.NewGmailEmailSender("config.json", "token.json")
+	if err != nil {
+		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
+	}
+
+	jwtAuth, err := auth.NewAuthJwt()
+	if err != nil {
+		log.Fatal(fmt.Errorf("jwt auth: %w", err))
+	}
+
 	db, err := sql.Open("pgx", env.DatabaseStr())
 
 	if err != nil {
@@ -63,7 +75,7 @@ func main() {
 
 	_ = rdb
 
-	r := router.NewRouter(db, logger)
+	r := router.NewRouter(db, logger, gmail, jwtAuth)
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
 }

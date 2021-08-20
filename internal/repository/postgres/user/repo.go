@@ -114,6 +114,16 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User,
 	return u, nil
 }
 
+func (r *Repository) UserExists(ctx context.Context, email string) bool {
+	query := `SELECT 1 FROM users WHERE email = $1`
+
+	var n string
+	if err := r.storage.QueryRowContext(ctx, query, email).Scan(n); err != nil {
+		return false
+	}
+	return true
+}
+
 // GetAll get all users.
 func (r *Repository) GetAll(ctx context.Context) (res []entity.User, err error) {
 	query := `SELECT id, name, email, role FROM users ORDER BY name`
