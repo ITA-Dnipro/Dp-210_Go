@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
@@ -45,7 +46,9 @@ func main() {
 	}
 	err = db.Ping()
 	if err != nil {
-		_ = db.Close()
+		if err = db.Close(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
 		log.Fatal(fmt.Errorf("ping db %s : %w", env.DatabaseStr(), err))
 	}
 

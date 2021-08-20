@@ -4,7 +4,7 @@ RUN mkdir /app
 WORKDIR /app
 RUN mkdir ./bin
 COPY ./ ./
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ./bin/dp210goapp ./
+RUN go build -o ./bin/dp210goapp ./
 
 # Production image.
 FROM ubuntu:latest
