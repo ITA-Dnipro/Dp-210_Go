@@ -1,46 +1,42 @@
-package router
+package http
 
 import (
 	"database/sql"
-	"fmt"
-	"time"
 
-	codeRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore/code"
+	restore "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user"
 	handlePasw "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user/password"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	jwt "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
-	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/user"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 	usecasesPasw "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user/password"
-
-	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/memory"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
+type Auth interface {
+	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+	InvalidateToken(userId string) error
+}
+
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
+func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, auth Auth) chi.Router {
 	repo := postgres.NewRepository(db)
 	usecase := usecases.NewUsecases(repo)
 
-	gmail, err := mail.NewGmailEmailSender("config.json", "token.json")
-	if err != nil {
-		panic(fmt.Errorf("can't find files: %w", err))
-	}
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
-	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, codeRepo.NewCache(db))
+	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, restore.NewCodeRepo(db))
 
-	c := cache.NewJwtCache()
-	auth := jwt.NewJwtAuth(c, 15*time.Minute)
-
-	hs := handlers.NewHandlers(usecase, logger, auth)
-	paswHandler := handlePasw.NewHandler(paswCase, logger)
 	md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
+	hs := handlers.NewHandlers(usecase, logger, auth)
+
+	paswHandler := handlePasw.NewHandler(paswCase, logger, auth)
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)

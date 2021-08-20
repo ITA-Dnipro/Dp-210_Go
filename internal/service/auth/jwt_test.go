@@ -5,48 +5,57 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateValidateToken(t *testing.T) {
-	auth := NewJwtAuth(NewMockCache(), time.Minute)
-
 	tts := []struct {
 		id      string
+		role    role.Role
 		expires time.Duration
 		wait    time.Duration
 		err     bool
 	}{
-		{"1", time.Second, time.Second * 2, true},
-		{"2", time.Second * 2, time.Second, false},
+		{"1", role.Viewer, time.Second, time.Second * 2, true},
+		{"2", role.Operator, time.Second * 2, time.Second, false},
 	}
 	for _, tt := range tts {
-		auth.Lifetime = tt.expires
-		token, err := auth.CreateToken(tt.id)
+		auth, err := NewJwtAuth(NewMockCache(), tt.expires)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role})
 		assert.Nil(t, err)
 		time.Sleep(tt.wait)
 
-		id, err := auth.ValidateToken(token)
+		u, err := auth.ValidateToken(token)
 		assert.Equal(t, tt.err, err != nil)
 		if !tt.err {
-			assert.EqualValues(t, tt.id, id)
+			assert.EqualValues(t, tt.id, u.Id)
 		}
 	}
 }
 
 func TestCreateInvalidateToken(t *testing.T) {
-	auth := NewJwtAuth(NewMockCache())
+	auth, err := NewJwtAuth(NewMockCache(), time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tts := []struct {
-		id  string
-		err bool
+		id   string
+		err  bool
+		role role.Role
 	}{
-		{"1", true},
-		{"2", true},
+		{"1", true, role.Viewer},
+		{"2", true, role.Viewer},
 	}
 	for _, tt := range tts {
 		auth.Lifetime = time.Second * 10
-		token, err := auth.CreateToken(tt.id)
+		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role})
 		assert.Nil(t, err)
 
 		err = auth.InvalidateToken(tt.id)

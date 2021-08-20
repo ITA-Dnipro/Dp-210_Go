@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
 	md "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
@@ -24,22 +24,21 @@ type UsersUsecases interface {
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (id string, err error)
+	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
+}
+
+type Auth interface {
+	CreateToken(user authPkg.UserAuth) (authPkg.JwtToken, error)
+	InvalidateToken(userId string) error
 }
 
 const idKey = "id"
-const tokenTime = time.Minute * 15
 
 // Handlers represent a user handlers.
 type Handlers struct {
 	userCases UsersUsecases
 	logger    *zap.Logger
 	auth      Auth
-}
-
-type Auth interface {
-	CreateToken(uid string) (auth.JwtToken, error)
-	InvalidateToken(uid string) error
 }
 
 // NewHandlers create new user handlers.
@@ -58,15 +57,15 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
 	}
 	var tkn struct {
-		Token auth.JwtToken `json:"token"`
+		Token authPkg.JwtToken `json:"token"`
 	}
-	tkn.Token, err = h.auth.CreateToken(id)
+	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
@@ -76,14 +75,14 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
-	uId, ok := md.FromContext(r.Context())
+	u, ok := md.UserFromContext(r.Context())
 	if !ok {
 		h.writeErrorResponse(http.StatusUnauthorized, "no such session", w)
 		return
 	}
 
-	if err := h.auth.InvalidateToken(uId); err != nil {
-		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", uId, err))
+	if err := h.auth.InvalidateToken(u.Id); err != nil {
+		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", u.Id, err))
 		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
 		return
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/golang-jwt/jwt"
 )
 
@@ -44,12 +46,10 @@ type JwtAuth struct {
 	signKey   *rsa.PrivateKey
 }
 
-func NewJwtAuth(cache Cache, lifetime time.Duration) *JwtAuth {
+func NewJwtAuth(cache Cache, lifetime time.Duration) (*JwtAuth, error) {
 	auth := JwtAuth{Cache: cache, Lifetime: lifetime}
-	if err := auth.initializeAuthKeys(); err != nil {
-		panic(err)
-	}
-	return &auth
+	err := auth.initializeAuthKeys()
+	return &auth, err
 }
 
 func (auth *JwtAuth) initializeAuthKeys() error {
@@ -68,11 +68,12 @@ func (auth *JwtAuth) initializeAuthKeys() error {
 	return nil
 }
 
-func (auth *JwtAuth) CreateToken(userId string) (JwtToken, error) {
+func (auth *JwtAuth) CreateToken(user UserAuth) (JwtToken, error) {
 	now := time.Now()
 	tomorrow := now.Add(auth.Lifetime)
 	claims := &AuthClaims{
-		userId,
+		user.Id,
+		user.Role,
 		jwt.StandardClaims{
 			IssuedAt:  now.Unix(),
 			ExpiresAt: tomorrow.Unix(),
@@ -86,36 +87,41 @@ func (auth *JwtAuth) CreateToken(userId string) (JwtToken, error) {
 		return "", fmt.Errorf("sign token: %w", err)
 	}
 
-	if err = auth.Cache.Set(userId, t); err != nil {
-		return "", fmt.Errorf("save token for: %v; %w", userId, err)
+	if err = auth.Cache.Set(user.Id, t); err != nil {
+		return "", fmt.Errorf("save token for: %v; %w", user.Id, err)
 	}
 
 	return JwtToken(t), err
 }
 
-func (auth *JwtAuth) ValidateToken(t JwtToken) (string, error) {
+func (auth *JwtAuth) ValidateToken(t JwtToken) (UserAuth, error) {
 	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return auth.verifyKey, nil
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("validateToken: %w", err)
+		return UserAuth{}, fmt.Errorf("validateToken: %w", err)
 	}
 
 	if !token.Valid {
-		return "", ErrInvalidToken
+		return UserAuth{}, ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*AuthClaims)
 	if !ok {
-		return "", ErrInvalidTokenStructure
+		return UserAuth{}, ErrInvalidTokenStructure
 	}
 
 	if err := auth.validateInStorage(t, claims.UserId); err != nil {
-		return "", err
+		return UserAuth{}, err
 	}
 
-	return claims.UserId, nil
+	u := UserAuth{
+		Id:   claims.UserId,
+		Role: claims.UserRole,
+	}
+
+	return u, nil
 }
 
 func (auth *JwtAuth) InvalidateToken(userId string) error {
@@ -140,6 +146,12 @@ func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
 }
 
 type AuthClaims struct {
-	UserId string
+	UserId   string
+	UserRole role.Role
 	jwt.StandardClaims
+}
+
+type UserAuth struct {
+	Id   string
+	Role role.Role
 }

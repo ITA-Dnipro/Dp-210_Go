@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"go.uber.org/zap"
 )
 
@@ -15,7 +15,7 @@ type UserUsecases interface {
 }
 
 type Auth interface {
-	ValidateToken(t auth.JwtToken) (string, error)
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
 }
 
 type Middleware struct {
@@ -42,13 +42,10 @@ func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			id, ok := FromContext(ctx)
-			if ok {
-				rl, err := m.UserUC.GetRoleByID(ctx, id)
-				if err == nil && role.IsAllowedRole(rl, roles) {
-					next.ServeHTTP(w, r)
-					return
-				}
+			u, ok := UserFromContext(ctx)
+			if ok && role.IsAllowedRole(u.Role, roles) {
+				next.ServeHTTP(w, r)
+				return
 			}
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		})

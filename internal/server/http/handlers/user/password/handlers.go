@@ -4,29 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"go.uber.org/zap"
 )
+
+type Auth interface {
+	CreateToken(user authPkg.UserAuth) (authPkg.JwtToken, error)
+}
 
 type Handlers struct {
 	paswCases PasswordUsecases
 	logger    *zap.Logger
+	auth      Auth
 }
 
-func NewHandler(paswCases PasswordUsecases, logger *zap.Logger) *Handlers {
+func NewHandler(paswCases PasswordUsecases, logger *zap.Logger, auth Auth) *Handlers {
 	return &Handlers{
 		paswCases: paswCases,
 		logger:    logger,
+		auth:      auth,
 	}
 }
 
 type PasswordUsecases interface {
 	SendRestorePasswordCode(ctx context.Context, email string) (code string, err error)
-	Authenticate(ctx context.Context, pc entity.PasswordCode) (string, error)
+	Authenticate(ctx context.Context, pc entity.PasswordCode) (entity.User, error)
 	DeleteCode(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, passw entity.UserNewPassword) error
 }
@@ -53,13 +58,13 @@ func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uId, err := h.paswCases.Authenticate(r.Context(), req)
+	user, err := h.paswCases.Authenticate(r.Context(), req)
 	if err != nil {
 		h.writeErrorResponse(http.StatusForbidden, "authorization code is wrong", w)
 		return
 	}
 
-	tk, err := auth.CreateToken(uId, 10*time.Minute)
+	tk, err := h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, "could not generate token", w)
 	}
@@ -76,11 +81,12 @@ func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ok bool
-	if req.UserID, ok = middleware.FromContext(r.Context()); !ok {
+	u, ok := middleware.UserFromContext(r.Context())
+	if !ok {
 		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
 		return
 	}
+	req.UserID = u.Id
 
 	if req.Password == "" {
 		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criterium", w)

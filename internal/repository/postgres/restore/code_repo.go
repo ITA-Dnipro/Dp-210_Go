@@ -8,15 +8,15 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 )
 
-type Cache struct {
+type Repo struct {
 	storage *sql.DB
 }
 
-func NewCache(db *sql.DB) *Cache {
-	return &Cache{storage: db}
+func NewCodeRepo(db *sql.DB) *Repo {
+	return &Repo{storage: db}
 }
 
-func (r *Cache) Set(ctx context.Context, key, value string) error {
+func (r *Repo) Set(ctx context.Context, key, value string) error {
 	q := `INSERT INTO password_codes (email, code) VALUES ($1, $2)`
 
 	res, err := r.storage.ExecContext(ctx, q,
@@ -38,7 +38,7 @@ func (r *Cache) Set(ctx context.Context, key, value string) error {
 	return nil
 }
 
-func (r *Cache) Get(ctx context.Context, key string) (string, error) {
+func (r *Repo) Get(ctx context.Context, key string) (string, error) {
 	q := `SELECT code FROM password_codes WHERE email = $1`
 
 	c := entity.PasswordCode{Email: key}
@@ -48,7 +48,7 @@ func (r *Cache) Get(ctx context.Context, key string) (string, error) {
 	return c.Code, nil
 }
 
-func (r *Cache) Del(ctx context.Context, key string) error {
+func (r *Repo) Del(ctx context.Context, key string) error {
 	q := `DELETE FROM password_codes WHERE email = $1`
 	res, err := r.storage.ExecContext(ctx, q, key)
 	if err != nil {
