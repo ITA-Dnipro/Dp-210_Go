@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/cache/memory"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -45,7 +47,8 @@ func main() {
 		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
 	}
 
-	jwtAuth, err := auth.NewAuthJwt()
+	c := memory.NewJwtCache()
+	jwtAuth, err := auth.NewJwtAuth(c, 15*time.Minute)
 	if err != nil {
 		log.Fatal(fmt.Errorf("jwt auth: %w", err))
 	}

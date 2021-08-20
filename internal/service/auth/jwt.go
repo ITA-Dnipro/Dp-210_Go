@@ -25,44 +25,52 @@ emkBheE4h+PxAiEAnRdtsanAYKYLB0hJRSCcaDW8GaboYXIgoT2WO5yhrFcCIBkg
 URG/h+mR4G6J7qPdHN2S8wK7WyqJx3TiH/nwVK+t
 -----END RSA PRIVATE KEY-----`
 
-type JwtToken string
-
 var (
 	ErrInvalidToken          = jwt.NewValidationError("invalid token", 20)
 	ErrInvalidTokenStructure = jwt.NewValidationError("invalid token structure", 21)
 	ErrTokenExpired          = jwt.NewValidationError("token expired", 21)
 )
 
-type AuthJwt struct {
+type JwtToken string
+
+type Cache interface {
+	Get(key string) (string, error)
+	Set(key, value string) error
+	Del(key string) error
+}
+
+type JwtAuth struct {
+	Cache     Cache
+	Lifetime  time.Duration
 	verifyKey *rsa.PublicKey
 	signKey   *rsa.PrivateKey
 }
 
-func NewAuthJwt() (*AuthJwt, error) {
-	auth := AuthJwt{}
+func NewJwtAuth(cache Cache, lifetime time.Duration) (*JwtAuth, error) {
+	auth := JwtAuth{Cache: cache, Lifetime: lifetime}
 	err := auth.initializeAuthKeys()
 	return &auth, err
 }
 
-func (a *AuthJwt) initializeAuthKeys() error {
+func (auth *JwtAuth) initializeAuthKeys() error {
 	sk, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth private: %w", err)
 	}
-	a.signKey = sk
+	auth.signKey = sk
 
 	vk, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth public: %w", err)
 	}
-	a.verifyKey = vk
+	auth.verifyKey = vk
 
 	return nil
 }
 
-func (a *AuthJwt) CreateToken(user UserAuth, lifetime time.Duration) (JwtToken, error) {
+func (auth *JwtAuth) CreateToken(user UserAuth) (JwtToken, error) {
 	now := time.Now()
-	tomorrow := now.Add(lifetime)
+	tomorrow := now.Add(auth.Lifetime)
 	claims := &AuthClaims{
 		user.Id,
 		user.Role,
@@ -73,13 +81,22 @@ func (a *AuthJwt) CreateToken(user UserAuth, lifetime time.Duration) (JwtToken, 
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	t, err := token.SignedString(a.signKey)
+
+	t, err := token.SignedString(auth.signKey)
+	if err != nil {
+		return "", fmt.Errorf("sign token: %w", err)
+	}
+
+	if err = auth.Cache.Set(user.Id, t); err != nil {
+		return "", fmt.Errorf("save token for: %v; %w", user.Id, err)
+	}
+
 	return JwtToken(t), err
 }
 
-func (a *AuthJwt) ValidateToken(t JwtToken) (UserAuth, error) {
+func (auth *JwtAuth) ValidateToken(t JwtToken) (UserAuth, error) {
 	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return a.verifyKey, nil
+		return auth.verifyKey, nil
 	})
 
 	if err != nil {
@@ -95,12 +112,37 @@ func (a *AuthJwt) ValidateToken(t JwtToken) (UserAuth, error) {
 		return UserAuth{}, ErrInvalidTokenStructure
 	}
 
+	if err := auth.validateInStorage(t, claims.UserId); err != nil {
+		return UserAuth{}, err
+	}
+
 	u := UserAuth{
 		Id:   claims.UserId,
 		Role: claims.UserRole,
 	}
 
 	return u, nil
+}
+
+func (auth *JwtAuth) InvalidateToken(userId string) error {
+	if err := auth.Cache.Del(userId); err != nil {
+		return fmt.Errorf("invalidate token: %w", err)
+	}
+
+	return nil
+}
+
+func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
+	tk, err := auth.Cache.Get(userId)
+	if err != nil {
+		return fmt.Errorf("user %v logged out", userId)
+	}
+
+	if JwtToken(tk) != t {
+		return fmt.Errorf("no such token for user %v", userId)
+	}
+
+	return nil
 }
 
 type AuthClaims struct {

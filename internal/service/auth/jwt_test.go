@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -10,11 +11,6 @@ import (
 )
 
 func TestCreateValidateToken(t *testing.T) {
-	auth, err := NewAuthJwt()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tts := []struct {
 		id      string
 		role    role.Role
@@ -26,7 +22,12 @@ func TestCreateValidateToken(t *testing.T) {
 		{"2", role.Operator, time.Second * 2, time.Second, false},
 	}
 	for _, tt := range tts {
-		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role}, tt.expires)
+		auth, err := NewJwtAuth(NewMockCache(), tt.expires)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role})
 		assert.Nil(t, err)
 		time.Sleep(tt.wait)
 
@@ -36,4 +37,58 @@ func TestCreateValidateToken(t *testing.T) {
 			assert.EqualValues(t, tt.id, u.Id)
 		}
 	}
+}
+
+func TestCreateInvalidateToken(t *testing.T) {
+	auth, err := NewJwtAuth(NewMockCache(), time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tts := []struct {
+		id   string
+		err  bool
+		role role.Role
+	}{
+		{"1", true, role.Viewer},
+		{"2", true, role.Viewer},
+	}
+	for _, tt := range tts {
+		auth.Lifetime = time.Second * 10
+		token, err := auth.CreateToken(UserAuth{Id: tt.id, Role: tt.role})
+		assert.Nil(t, err)
+
+		err = auth.InvalidateToken(tt.id)
+		assert.Nil(t, err)
+
+		id, err := auth.ValidateToken(token)
+		_ = id
+		assert.Equal(t, tt.err, err != nil)
+	}
+}
+
+type MockCache struct {
+	cache map[string]string
+}
+
+func NewMockCache() *MockCache {
+	return &MockCache{make(map[string]string)}
+}
+
+func (c *MockCache) Get(key string) (string, error) {
+	val, ok := c.cache[key]
+	if !ok {
+		return "", fmt.Errorf("no such element")
+	}
+	return val, nil
+}
+
+func (c *MockCache) Set(key, value string) error {
+	c.cache[key] = value
+	return nil
+}
+
+func (c *MockCache) Del(key string) error {
+	delete(c.cache, key)
+	return nil
 }
