@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/golang-jwt/jwt"
 )
 
@@ -26,41 +28,44 @@ URG/h+mR4G6J7qPdHN2S8wK7WyqJx3TiH/nwVK+t
 type JwtToken string
 
 var (
-	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
-)
-
-var (
 	ErrInvalidToken          = jwt.NewValidationError("invalid token", 20)
 	ErrInvalidTokenStructure = jwt.NewValidationError("invalid token structure", 21)
 	ErrTokenExpired          = jwt.NewValidationError("token expired", 21)
 )
 
-func init() {
-	InitializeAuthKeys()
+type AuthJwt struct {
+	verifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
 }
 
-func InitializeAuthKeys() error {
+func NewAuthJwt() (*AuthJwt, error) {
+	auth := AuthJwt{}
+	err := auth.initializeAuthKeys()
+	return &auth, err
+}
+
+func (a *AuthJwt) initializeAuthKeys() error {
 	sk, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth private: %w", err)
 	}
-	signKey = sk
+	a.signKey = sk
 
 	vk, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 	if err != nil {
 		return fmt.Errorf("initializeAuth public: %w", err)
 	}
-	verifyKey = vk
+	a.verifyKey = vk
 
 	return nil
 }
 
-func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
+func (a *AuthJwt) CreateToken(user UserAuth, lifetime time.Duration) (JwtToken, error) {
 	now := time.Now()
 	tomorrow := now.Add(lifetime)
 	claims := &AuthClaims{
-		userId,
+		user.Id,
+		user.Role,
 		jwt.StandardClaims{
 			IssuedAt:  now.Unix(),
 			ExpiresAt: tomorrow.Unix(),
@@ -68,32 +73,43 @@ func CreateToken(userId string, lifetime time.Duration) (JwtToken, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	t, err := token.SignedString(signKey)
+	t, err := token.SignedString(a.signKey)
 	return JwtToken(t), err
 }
 
-func ValidateToken(t JwtToken) (string, error) {
+func (a *AuthJwt) ValidateToken(t JwtToken) (UserAuth, error) {
 	token, err := jwt.ParseWithClaims(string(t), &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return verifyKey, nil
+		return a.verifyKey, nil
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("validateToken: %w", err)
+		return UserAuth{}, fmt.Errorf("validateToken: %w", err)
 	}
 
 	if !token.Valid {
-		return "", ErrInvalidToken
+		return UserAuth{}, ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*AuthClaims)
 	if !ok {
-		return "", ErrInvalidTokenStructure
+		return UserAuth{}, ErrInvalidTokenStructure
 	}
 
-	return claims.UserId, nil
+	u := UserAuth{
+		Id:   claims.UserId,
+		Role: claims.UserRole,
+	}
+
+	return u, nil
 }
 
 type AuthClaims struct {
-	UserId string
+	UserId   string
+	UserRole role.Role
 	jwt.StandardClaims
+}
+
+type UserAuth struct {
+	Id   string
+	Role role.Role
 }
