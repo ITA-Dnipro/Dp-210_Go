@@ -15,16 +15,23 @@ services:
       - 8000:8000
     depends_on:
       - redis
+      - db
     networks:
       - fullstack
 
   redis:
     container_name: dp210go_redisctr
     image: redis:latest
-    depends_on:
-      - db
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
     networks:
       - fullstack
+    
 
   db:
     container_name: dp210go_dbctr
