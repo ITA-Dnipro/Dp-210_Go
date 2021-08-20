@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 )
 
 type contextKey string

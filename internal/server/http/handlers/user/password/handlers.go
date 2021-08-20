@@ -8,7 +8,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	authPkg "github.com/ITA-DniproDp-210_Go/internal/service/auth"
 	"go.uber.org/zap"
 )
 

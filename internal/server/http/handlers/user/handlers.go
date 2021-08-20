@@ -10,7 +10,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
-	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
