@@ -81,6 +81,18 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (e
 	return user, nil
 }
 
+// // Authenticate user by email and password.
+// func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
+// 	u, err = uc.repo.GetByEmail(ctx, email)
+// 	if err != nil {
+// 		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
+// 	}
+// 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
+// 		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
+// 	}
+
+// 	return u, nil
+// }
 func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {
 	return fmt.Errorf("delete passw code: %w", uc.cache.Del(ctx, email))
 }

@@ -67,19 +67,6 @@ func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 	return uc.repo.GetAll(ctx)
 }
 
-// Authenticate user by email and password.
-func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
-	u, err = uc.repo.GetByEmail(ctx, email)
-	if err != nil {
-		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
-		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
-	}
-
-	return u, nil
-}
-
 func (uc *Usecases) ChangePassword(ctx context.Context, passw entity.UserNewPassword) error {
 
 	u, err := uc.userRepo.GetByID(ctx, passw.UserID)

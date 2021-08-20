@@ -3,10 +3,10 @@ package password
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"go.uber.org/zap"
 )
@@ -74,32 +74,45 @@ func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
 	h.render(w, tk)
 }
 
-func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	var req entity.UserNewPassword
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "could not parse request", w)
+// GetToken by basic auth.
+func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
+	var newUser entity.NewUser
+	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
 		return
 	}
+	if ok := isRequestValid(&newUser); !ok {
+		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
+		return
+	}
+	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	if err != nil {
+		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		return
+	}
+	var tkn struct {
+		Token authPkg.JwtToken `json:"token"`
+	}
+	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	if err != nil {
+		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		return
+	}
+	h.logger.Info("ger all request succeeded")
+	h.render(w, tkn)
+}
 
-	u, ok := middleware.UserFromContext(r.Context())
+func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
+	u, ok := md.UserFromContext(r.Context())
 	if !ok {
-		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
-		return
-	}
-	req.UserID = u.Id
-
-	if req.Password == "" {
-		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criterium", w)
+		h.writeErrorResponse(http.StatusUnauthorized, "no such session", w)
 		return
 	}
 
-	if req.Password != req.PasswordConfirm {
-		h.writeErrorResponse(http.StatusBadRequest, "new password and new password confirm do not match", w)
+	if err := h.auth.InvalidateToken(u.Id); err != nil {
+		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", u.Id, err))
+		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
 		return
-	}
-
-	if err := h.paswCases.ChangePassword(r.Context(), req); err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "wrong password", w)
 	}
 
 	w.WriteHeader(http.StatusOK)
