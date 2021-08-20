@@ -2,7 +2,6 @@ package router
 
 import (
 	"database/sql"
-	"fmt"
 
 	codeRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore/code"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
@@ -18,14 +17,10 @@ import (
 )
 
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
+func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender) chi.Router {
 	repo := postgres.NewRepository(db)
 	usecase := usecases.NewUsecases(repo)
 
-	gmail, err := mail.NewGmailEmailSender("config.json", "token.json")
-	if err != nil {
-		panic(fmt.Errorf("can't find files: %w", err))
-	}
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
 	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, codeRepo.NewCache(db))

@@ -86,14 +86,16 @@ func getClient(config *oauth2.Config, tokFile string) (*http.Client, error) {
 
 	tok, err := tokenFromFile(tokFile)
 	log.Println(fmt.Errorf("get token from file %v, %w", tokFile, err))
+	if err == nil {
+		return config.Client(context.Background(), tok), err
+	}
+
+	tok, err = getTokenFromWeb(config)
 	if err != nil {
-		tok, err = getTokenFromWeb(config)
-		if err != nil {
-			return nil, fmt.Errorf("get token from web: %w", err)
-		}
-		if err = saveToken(tokFile, tok); err != nil {
-			return nil, fmt.Errorf("save token to file %v: %w", tokFile, err)
-		}
+		return nil, fmt.Errorf("get token from web: %w", err)
+	}
+	if err = saveToken(tokFile, tok); err != nil {
+		return nil, fmt.Errorf("save token to file %v: %w", tokFile, err)
 	}
 	return config.Client(context.Background(), tok), err
 }
