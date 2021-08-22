@@ -31,7 +31,7 @@ type UsersUsecases interface {
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (id string, err error)
+	Authenticate(ctx context.Context, email, password string) (entity.User, error)
 }
 
 const idKey = "id"
@@ -50,16 +50,16 @@ func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
 
 // GetToken by basic auth.
 func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
-	var user RequestUser
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var ru RequestUser
+	if err := json.NewDecoder(r.Body).Decode(&ru); err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
 		return
 	}
-	if ok := isRequestValid(&user); !ok {
+	if ok := isRequestValid(&ru); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.uc.Authenticate(r.Context(), user.Email, user.Password)
+	u, err := h.uc.Authenticate(r.Context(), ru.Email, ru.Password)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
@@ -67,7 +67,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	var tkn struct {
 		Token auth.JwtToken `json:"token"`
 	}
-	tkn.Token, err = auth.CreateToken(id, tokenTime)
+	tkn.Token, err = auth.CreateToken(u.ID, u.PermissionRole, tokenTime)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return

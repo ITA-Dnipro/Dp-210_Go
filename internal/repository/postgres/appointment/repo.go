@@ -26,7 +26,7 @@ type Repository struct {
 
 // Create Add new appointment.
 func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
-	query := `INSERT INTO appointments (appointment_id , doctor_id,  patient_id , reason, time_range) 
+	query := `INSERT INTO appointments (id , doctor_id,  patient_id , reason, time_range) 
               VALUES ( $1, $2, $3, $4, tstzrange($5, $6))`
 	res, err := r.storage.ExecContext(ctx,
 		query,
@@ -73,7 +73,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *Repository) fetch(ctx context.Context, query string, args ...interface{}) (res []entity.Appointment, err error) {
-	rows, err := r.storage.QueryContext(ctx, query)
+	rows, err := r.storage.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}

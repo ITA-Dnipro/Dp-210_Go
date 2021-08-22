@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -17,7 +18,6 @@ type UsersRepository interface {
 
 type Middleware struct {
 	Logger *zap.Logger
-	UR     UsersRepository
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
@@ -38,13 +38,11 @@ func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			id, ok := FromContext(ctx)
-			if ok {
-				u, err := m.UR.GetByID(ctx, id)
-				if err == nil && role.IsAllowedRole(role.Role(u.PermissionRole), roles) {
-					next.ServeHTTP(w, r)
-					return
-				}
+			ur, ok := UserRoleFromContext(ctx)
+			fmt.Println("role", ur)
+			if ok && role.IsAllowedRole(role.Role(ur), roles) {
+				next.ServeHTTP(w, r)
+				return
 			}
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		})

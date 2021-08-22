@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
@@ -17,7 +16,7 @@ const idKey = "id"
 
 // UsersUsecases represent appointment usecases.
 type UsersUsecases interface {
-	GetByUser(ctx context.Context, userID string, userRole role.Role) ([]entity.Appointment, error)
+	GetByUser(ctx context.Context, userID string) ([]entity.Appointment, error)
 	GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error)
 	GetByDoctorID(ctx context.Context, id string) ([]entity.Appointment, error)
 	GetAll(ctx context.Context) (res []entity.Appointment, err error)
@@ -47,7 +46,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "appointment data invalid", w)
 		return
 	}
-	id, ok := middleware.FromContext(r.Context())
+	id, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "context user data invalid", w)
 		return
@@ -59,6 +58,22 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logger.Info("user has been created", zap.String(idKey, a.ID))
+	h.render(w, a)
+}
+
+func (h *Handlers) GetAppointments(w http.ResponseWriter, r *http.Request) {
+	id, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		h.writeErrorResponse(http.StatusBadRequest, "context user data invalid", w)
+		return
+	}
+	a, err := h.usecases.GetByUser(r.Context(), id)
+	if err != nil {
+		h.logger.Error("can't create a appointment", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	h.logger.Info("get all appointments by user id", zap.String(idKey, id))
 	h.render(w, a)
 }
 

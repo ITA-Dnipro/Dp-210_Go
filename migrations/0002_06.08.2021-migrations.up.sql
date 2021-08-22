@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS doctors (
 );
 
 CREATE TABLE IF NOT EXISTS appointments (
-   appointment_id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
+   id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
    doctor_id uuid REFERENCES doctors (id),
    patient_id uuid REFERENCES patients (id),
    reason varchar(150),

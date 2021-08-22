@@ -42,7 +42,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	dh := doctorHandlers.NewHandlers(dc, logger)
 	ah := appointmentHandlers.NewHandlers(ac, logger)
 
-	md := &middleware.Middleware{Logger: logger, UR: ur}
+	md := &middleware.Middleware{Logger: logger}
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
@@ -67,7 +67,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 			})
 			r.Group(func(r chi.Router) { // route with permissions
 				r.Use(md.RoleOnly(role.Patient, role.Doctor, role.Admin))
-				//r.Get("/appointments", ph.GetAppointmentsByUser) // GET /api/v1/appointments
+				r.Get("/appointments", ah.GetAppointments) // GET /api/v1/appointments
 			})
 			r.Group(func(r chi.Router) { // route with permissions
 				r.Use(md.RoleOnly(role.Operator, role.Admin))
