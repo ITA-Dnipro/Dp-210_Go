@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/jackc/pgx"
 
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
 )
@@ -37,9 +38,30 @@ func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
 		a.From,
 		a.To,
 	)
+
 	if err != nil {
+		if err, ok := err.(pgx.PgError); ok {
+			fmt.Println("Severity:", err.Severity)
+			fmt.Println("Code:", err.Code)
+			fmt.Println("Message:", err.Message)
+			fmt.Println("Detail:", err.Detail)
+			fmt.Println("Hint:", err.Hint)
+			fmt.Println("Position:", err.Position)
+			fmt.Println("InternalPosition:", err.InternalPosition)
+			fmt.Println("Where:", err.Where)
+			fmt.Println("Schema:", err.SchemaName)
+			fmt.Println("Table:", err.TableName)
+			fmt.Println("Column:", err.ColumnName)
+			fmt.Println("DataTypeName:", err.DataTypeName)
+			fmt.Println("Constraint:", err.ConstraintName)
+			fmt.Println("File:", err.File)
+			fmt.Println("Line:", err.Line)
+			fmt.Println("Routine:", err.Routine)
+		}
 		return fmt.Errorf("store error: %w", err)
 	}
+	_, ok := err.(pgx.PgError)
+	fmt.Println("case pg", ok)
 
 	rowsAfected, err := res.RowsAffected()
 	if err != nil {
@@ -55,7 +77,7 @@ func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
 
 // Delete deletes a appointment from storage.
 func (r *Repository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM appointment WHERE id = $1`
+	query := `DELETE FROM appointments WHERE id = $1`
 	res, err := r.storage.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("no doctor with %s id", id)

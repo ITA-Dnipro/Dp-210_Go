@@ -2,6 +2,7 @@ package appointmen
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
@@ -46,8 +47,15 @@ type Usecases struct {
 
 // Create Add new appointment.
 func (uc *Usecases) Create(ctx context.Context, a *entity.Appointment) error {
-	a.ID = uuid.New().String()
+	d, err := uc.dr.GetByID(ctx, a.DoctorID)
+	if err != nil {
+		return fmt.Errorf("can't find a doctor with %v id", a.DoctorID)
+	}
 	a.To = a.From.Add(time.Minute * 30)
+	if a.To.After(d.EndAt) || a.From.Before(d.StartAt) {
+		return fmt.Errorf("doctor doesn't work %v - %v", a.From, a.To)
+	}
+	a.ID = uuid.New().String()
 	return uc.ar.Create(ctx, a)
 }
 

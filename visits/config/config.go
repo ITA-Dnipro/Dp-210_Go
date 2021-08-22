@@ -14,7 +14,7 @@ type (
 	}
 	Postgres struct {
 		Host         string        `env:"POSTGRES_HOST"              env-default:"0.0.0.0:5432"`
-		Name         string        `env:"API_POSTGRES_DATABASE"      env-default:"postgres"`
+		Name         string        `env:"API_POSTGRES_DATABASE"      env-default:"test"`
 		User         string        `env:"API_POSTGRES_USER"          env-default:"postgres"`
 		Password     string        `env:"API_POSTGRES_PASSWORD"      env-default:"secret"`
 		PoolSize     int           `env:"API_POSTGRES_POOL_SIZE"     env-default:"10"`

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -39,7 +38,6 @@ func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			ur, ok := UserRoleFromContext(ctx)
-			fmt.Println("role", ur)
 			if ok && role.IsAllowedRole(role.Role(ur), roles) {
 				next.ServeHTTP(w, r)
 				return

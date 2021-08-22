@@ -15,6 +15,12 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/visits/store/postgres"
 	"github.com/go-chi/chi"
 
+	appointmentRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/appointment"
+	doctorRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/doctor"
+	patientRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/patient"
+	appointmentHandlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/appointment"
+	appointmentUsecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
+
 	"github.com/ilyakaznacheev/cleanenv"
 	"go.uber.org/zap"
 )
@@ -44,7 +50,11 @@ func run(logger *zap.Logger) error {
 		log.Printf("visits: Database Stopping")
 		db.Close()
 	}()
-
+	dr := doctorRepo.NewRepository(db)
+	pr := patientRepo.NewRepository(db)
+	ar := appointmentRepo.NewRepository(db)
+	ac := appointmentUsecases.NewUsecases(ar, dr, pr)
+	ah := appointmentHandlers.NewHandlers(ac, logger)
 	md := &middleware.Middleware{Logger: logger}
 
 	r := chi.NewRouter()
@@ -52,7 +62,12 @@ func run(logger *zap.Logger) error {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(md.AuthMiddleware)
 		r.Group(func(r chi.Router) { // route with permissions
-			r.Use(md.RoleOnly(role.Patient, role.Admin))
+			r.Use(md.RoleOnly(role.Patient))
+			r.Post("/appointments", ah.CreateAppointment) // Post /api/v1/appointment
+		})
+		r.Group(func(r chi.Router) { // route with permissions
+			r.Use(md.RoleOnly(role.Patient, role.Doctor, role.Admin, role.Operator))
+			r.Get("/appointments", ah.GetAppointments) // GET /api/v1/appointments
 		})
 	})
 	logger.Info("visits: Initializing API support")
