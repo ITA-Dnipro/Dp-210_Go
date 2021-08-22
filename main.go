@@ -55,10 +55,10 @@ func main() {
 	}
 
 	db, err := sql.Open("pgx", env.DatabaseStr())
-
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
+
 	err = db.Ping()
 	if err != nil {
 		db.Close()
@@ -80,5 +80,6 @@ func main() {
 
 	r := router.NewRouter(db, logger, gmail, jwtAuth)
 	// Start server
+	log.Println("Initialized successfully")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
 }
