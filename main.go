@@ -59,5 +59,5 @@ func main() {
 
 	r := router.NewRouter(db, logger)
 	// Start server
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r))
 }
