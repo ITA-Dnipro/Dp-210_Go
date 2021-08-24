@@ -10,6 +10,8 @@ const (
 	Operator Role = "operator"
 	// Viewer represent an viewer permission role.
 	Viewer Role = "viewer"
+	// Doctor represent an viewer permission role.
+	Doctor Role = "doctor"
 )
 
 // IsAllowedRole check if role is in allowed roles.

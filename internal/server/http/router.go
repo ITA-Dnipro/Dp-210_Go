@@ -1,80 +1,69 @@
-package http
+package router
 
 import (
 	"database/sql"
 
-	restore "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
-	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
+	postgresUser "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
+
+	postgresDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/doctor"
+
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user"
-	handlePasw "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user/password"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
-	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
-	usecasesPasw "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user/password"
+
+	handlersDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/doctor"
+	handlersUser "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user"
+
+	usecasesDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
+	usecasesUser "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
-type Auth interface {
-	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
-	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
-	InvalidateToken(userId string) error
-}
-
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, auth Auth) chi.Router {
-	repo := postgres.NewRepository(db)
-	usecase := usecases.NewUsecases(repo)
+func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
+	repoU := postgresUser.NewRepository(db)
+	usecaseU := usecasesUser.NewUsecases(repoU)
+	hsU := handlersUser.NewHandlers(usecaseU, logger)
+	mdU := &middleware.Middleware{Logger: logger, UserUC: usecaseU}
 
-	mailSender := mail.NewPasswordCodeSender(gmail)
-
-	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, restore.NewCodeRepo(db))
-
-	md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
-	hs := handlers.NewHandlers(usecase, logger, auth)
-
-	paswHandler := handlePasw.NewHandler(paswCase, logger, auth)
+	repoD := postgresDoctor.NewRepository(db)
+	usecaseD := usecasesDoctor.NewUsecases(repoD, repoU)
+	hsD := handlersDoctor.NewHandlers(usecaseD, logger)
 
 	r := chi.NewRouter()
-	r.Use(md.LoggingMiddleware)
+	r.Use(mdU.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/login", hs.GetToken) // POST /api/v1/login
+		//Anyone capabilities
+		r.Post("/login", hsU.GetToken)    // POST /api/v1/login
+		r.Post("/users", hsU.CreateUser)  // POST /api/v1/users
+		r.Get("/doctors", hsD.GetDoctors) // GET    /api/v1/doctors
 
-		r.Group(func(r chi.Router) {
-			r.Use(md.AuthMiddleware)
-			r.Post("/logout", hs.LogOut)
-		})
+		//Tmp
+		r.Post("/doctors", hsD.CreateDoctor) // POST	/api/v1/doctors
 
-		r.Route("/password", func(r chi.Router) {
-			r.Route("/restore", func(r chi.Router) {
-				r.Post("/code/send", paswHandler.SendRestorePasswordCode)
-				r.Post("/code/check", paswHandler.CheckPasswordCode)
-			})
-
-			r.Group(func(r chi.Router) {
-				r.Use(md.AuthMiddleware)
-				r.Post("/change", paswHandler.ChangePassword)
-			})
-		})
-
-		r.Post("/users", hs.CreateUser)   // POST /api/v1/users
 		r.Route("/", func(r chi.Router) { // route with permissions
-			r.Use(md.AuthMiddleware)
+			r.Use(mdU.AuthMiddleware)
 
+			//O + A capabilities
 			r.Group(func(r chi.Router) { // route with permissions
-				r.Use(md.RoleOnly(role.Operator, role.Admin))
+				r.Use(mdU.RoleOnly(role.Operator, role.Admin))
 
-				r.Get("/users", hs.GetUsers)     // GET /api/v1/users
-				r.Get("/users/{id}", hs.GetUser) // GET /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
+				r.Get("/users", hsU.GetUsers)     // GET /api/v1/users
+				r.Get("/users/{id}", hsU.GetUser) // GET /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
 			})
-			r.Group(func(r chi.Router) { // route with permission Admin.
-				r.Use(md.RoleOnly(role.Admin))
 
-				r.Put("/users/{id}", hs.UpdateUser)    // PUT /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
-				r.Delete("/users/{id}", hs.DeleteUser) // DELETE /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
+			//A only capabilities
+			r.Group(func(r chi.Router) { // route with permission Admin.
+				r.Use(mdU.RoleOnly(role.Admin))
+				//User
+				r.Put("/users/{id}", hsU.UpdateUser)    // PUT    /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
+				r.Delete("/users/{id}", hsU.DeleteUser) // DELETE /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
+
+				//Doctor
+				r.Put("/doctors/{id}", hsD.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
+				r.Delete("/doctors/{id}", hsD.DeleteDoctor) // DELETE /api/v1/doctors/<id>
+				//r.Post("/doctors", hsD.CreateDoctor)			// POST	/api/v1/doctors
 			})
 		})
 	})

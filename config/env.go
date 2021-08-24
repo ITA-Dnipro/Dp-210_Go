@@ -7,10 +7,10 @@ import (
 
 type Env struct {
 	DbUser     string `env:"DB_USER" env-default:"postgres"`
-	DbPassword string `env:"DB_PASSWORD" env-default:"dp210go"`
 	DbName     string `env:"DB_NAME" env-default:"postgres"`
-	DbHost     string `env:"DB_HOST" env-default:"0.0.0.0"`
+	DbPassword string `env:"POSTGRES_PASSWORD" env-default:"dp210go"`
 	DbPort     string `env:"DB_PORT" env-default:"5432"`
+	DbHost     string `env:"DB_HOST" env-default:"localhost"`
 	DbParams   string `env:"DB_PARAMS" env-default:"sslmode=disable&timezone=utc"`
 
 	RedisUrl      string `env:"REDIS_URL" env-default:"localhost:6379"`

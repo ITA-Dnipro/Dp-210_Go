@@ -1,5 +1,7 @@
-FROM ubuntu:latest
+FROM golang:latest as builder
 RUN mkdir /app
-RUN mkdir /app/migrations
-COPY ./bin/dp210goapp /app
-COPY ./migrations /app/migrations
+WORKDIR /app
+RUN mkdir ./bin
+COPY ./ ./
+RUN go build -o ./dp210goapp ./
+EXPOSE 8000

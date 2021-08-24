@@ -6,38 +6,44 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
-	auth "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
+	md "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
+
+	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
-// UsersUsecases represent user usecases.
+// UsersUsecases represent user userCases.
 type UsersUsecases interface {
 	Create(ctx context.Context, u entity.NewUser) (string, error)
-	Update(ctx context.Context, u *entity.User) error
+	Update(ctx context.Context, u entity.NewUser) (entity.User, error)
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (id string, err error)
+	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
+}
+
+type Auth interface {
+	CreateToken(user authPkg.UserAuth) (authPkg.JwtToken, error)
+	InvalidateToken(userId string) error
 }
 
 const idKey = "id"
-const tokenTime = time.Minute * 15
 
 // Handlers represent a user handlers.
 type Handlers struct {
-	usecases UsersUsecases
-	logger   *zap.Logger
+	userCases UsersUsecases
+	logger    *zap.Logger
+	auth      Auth
 }
 
 // NewHandlers create new user handlers.
-func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{usecases: uc, logger: log}
+func NewHandlers(uc UsersUsecases, log *zap.Logger, auth Auth) *Handlers {
+ 	return &Handlers{userCases: uc, logger: log, auth: auth}
 }
 
 // GetToken by basic auth.
@@ -51,15 +57,15 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.usecases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
 	}
 	var tkn struct {
-		Token auth.JwtToken `json:"token"`
+		Token authPkg.JwtToken `json:"token"`
 	}
-	tkn.Token, err = auth.CreateToken(id, tokenTime)
+	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
 		return
@@ -68,9 +74,25 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	h.render(w, tkn)
 }
 
+func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
+	u, ok := md.UserFromContext(r.Context())
+	if !ok {
+		h.writeErrorResponse(http.StatusUnauthorized, "no such session", w)
+		return
+	}
+
+	if err := h.auth.InvalidateToken(u.Id); err != nil {
+		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", u.Id, err))
+		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // GetUsers Get all users.
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.usecases.GetAll(r.Context())
+	users, err := h.userCases.GetAll(r.Context())
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -83,7 +105,7 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 // GetUser Get single user by id.
 func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
-	user, err := h.usecases.GetByID(r.Context(), id)
+	user, err := h.userCases.GetByID(r.Context(), id)
 	if err == nil {
 		h.render(w, user)
 		return
@@ -108,7 +130,7 @@ func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	id, err := h.usecases.Create(r.Context(), newUser)
+	id, err := h.userCases.Create(r.Context(), newUser)
 	if err != nil {
 		h.logger.Error("can't create a user", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
@@ -123,22 +145,23 @@ func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
 
-	var u entity.User
-	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+	var newUser entity.NewUser
+	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
 		return
 	}
 
-	if ok := isUserRequestValid(&u); !ok {
+	if ok := isRequestValid(&newUser); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	u.ID = id
-	if err := h.usecases.Update(r.Context(), &u); err != nil {
+	newUser.ID = id
+	user, err := h.userCases.Update(r.Context(), newUser)
+	if err != nil {
 		h.logger.Error("can't update a user", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			h.writeErrorResponse(http.StatusNotFound,
-				fmt.Sprintf("can't find a user with %v id", u.ID), w)
+				fmt.Sprintf("can't find a user with %v id", newUser.ID), w)
 			return
 		}
 
@@ -146,13 +169,13 @@ func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.render(w, u)
+	h.render(w, user)
 }
 
 // DeleteUser deletes a user from storage
 func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, idKey) // Gets params
-	if err := h.usecases.Delete(r.Context(), id); err != nil {
+	if err := h.userCases.Delete(r.Context(), id); err != nil {
 		h.logger.Error("can't delete", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
 			h.writeErrorResponse(http.StatusNotFound,
@@ -167,14 +190,7 @@ func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	h.render(w, Message{"deleted"})
 }
 
-func isRequestValid(nu *entity.NewUser) bool {
-	validate := validator.New()
-	err := validate.Struct(nu)
-	fmt.Println(err)
-	return err == nil
-}
-
-func isUserRequestValid(nu *entity.User) bool {
+func isRequestValid(nu interface{}) bool {
 	validate := validator.New()
 	err := validate.Struct(nu)
 	fmt.Println(err)

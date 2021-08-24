@@ -5,17 +5,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/auth"
 )
 
 type contextKey string
 
 var (
-	KeyUser = contextKey("user")
+	KeyUserId = contextKey("userId")
 )
 
-func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
+func (*Middleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t, ok := tokenfromRequest(r)
 		if !ok {
@@ -24,25 +23,25 @@ func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := md.Auth.ValidateToken(t)
+		uId, err := auth.ValidateToken(t)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized"))
 			return
 		}
 
-		ctx := contextWithUser(r.Context(), ReqUser{Id: user.Id, Role: user.Role})
+		ctx := NewContext(r.Context(), uId)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func contextWithUser(ctx context.Context, user ReqUser) context.Context {
-	return context.WithValue(ctx, KeyUser, user)
+func NewContext(ctx context.Context, userId string) context.Context {
+	return context.WithValue(ctx, KeyUserId, userId)
 }
 
-func UserFromContext(ctx context.Context) (user ReqUser, ok bool) {
-	user, ok = ctx.Value(KeyUser).(ReqUser)
-	return user, ok
+func FromContext(ctx context.Context) (string, bool) {
+	id, ok := ctx.Value(KeyUserId).(string)
+	return id, ok
 }
 
 func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
@@ -53,9 +52,4 @@ func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
 
 	jwtToken := auth.JwtToken(authHeader[1])
 	return jwtToken, true
-}
-
-type ReqUser struct {
-	Id   string
-	Role role.Role
 }

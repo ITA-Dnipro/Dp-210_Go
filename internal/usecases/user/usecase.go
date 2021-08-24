@@ -6,7 +6,6 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -53,18 +52,8 @@ func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, erro
 }
 
 // Update updates a user
-func (uc *Usecases) Update(ctx context.Context, nu entity.NewUser) (entity.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return entity.User{}, fmt.Errorf("generate password hash:%w", err)
-	}
-	u := entity.User{
-		ID:           nu.ID,
-		Name:         nu.Name,
-		Email:        nu.Email,
-		PasswordHash: hash,
-	}
-	return u, uc.repo.Update(ctx, &u)
+func (uc *Usecases) Update(ctx context.Context, u *entity.User) error {
+	return uc.repo.Update(ctx, u)
 }
 
 // Delete deletes a user from storage
@@ -92,14 +81,14 @@ func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 }
 
 // Authenticate user by email and password.
-func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
-	u, err = uc.repo.GetByEmail(ctx, email)
+func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (id string, err error) {
+	u, err := uc.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
+		return "", fmt.Errorf("authenticate get user by email:%w", err)
 	}
 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
-		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
+		return "", fmt.Errorf("authentication failed:%w", err)
 	}
 
-	return u, nil
+	return u.ID, nil
 }
