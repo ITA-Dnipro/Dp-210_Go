@@ -5,7 +5,6 @@ WORKDIR /app
 RUN mkdir ./bin
 COPY ./ ./
 RUN go build -o ./bin/dp210goapp ./
-EXPOSE 8000
 
 # Production image.
 FROM ubuntu:latest
@@ -17,4 +16,3 @@ RUN apt install net-tools
 COPY ./migrations /app/migrations
 COPY ./config.json /app
 COPY --from=builder /app/bin/dp210goapp /app
-EXPOSE 8000
