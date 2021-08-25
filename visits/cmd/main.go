@@ -52,9 +52,9 @@ func run(logger *zap.Logger) error {
 		log.Printf("visits: Database Stopping")
 		db.Close()
 	}()
-	events, err := kafka.NewEvents([]string{"localhost:9092"})
+	events, err := kafka.NewEvents([]string{cfg.Kaffka.Brokers})
 	if err != nil {
-		return fmt.Errorf("connecting to kafka: %w", err)
+		return fmt.Errorf("connecting to kafka %s: %w", cfg.Kaffka.Brokers, err)
 	}
 
 	events.On(kafka.MailTopic, func(payload []byte) error {

@@ -3,10 +3,13 @@ package appointment
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
 )
@@ -41,7 +44,12 @@ func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
 		a.From,
 		a.To,
 	)
+
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ExclusionViolation {
+			return fmt.Errorf("time is already taken")
+		}
 		return fmt.Errorf("create rows:%w", err)
 	}
 

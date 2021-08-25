@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type (
 	Config struct {
@@ -25,25 +28,29 @@ type (
 		DisableTLS   bool          `env:"API_POSTGRES_DISABLE_TLS"   env-default:"true"`
 	}
 	Kaffka struct {
-		Brokers  string `envconfig:"KAFKA_BROKERS"       env-default:"0.0.0.0:9092"`
-		Version  string `envconfig:"KAFKA_VERSION"       env-default:"1.1.0"`
-		Verbose  bool   `envconfig:"KAFKA_VERBOSE"       env-default:"true"`
-		ClientID string `envconfig:"KAFKA_CLIENT_ID"     env-default:"sarama-easy"`
-		Topics   string `envconfig:"KAFKA_TOPICS"        env-default:""`
+		Brokers  string `env:"KAFKA_BROKERS"       env-default:"0.0.0.0:9091"`
+		Version  string `env:"KAFKA_VERSION"       env-default:"1.1.0"`
+		Verbose  bool   `env:"KAFKA_VERBOSE"       env-default:"true"`
+		ClientID string `env:"KAFKA_CLIENT_ID"     env-default:"sarama-easy"`
+		Topics   string `env:"KAFKA_TOPICS"        env-default:""`
 
-		TLSEnabled bool   `envconfig:"KAFKA_TLS_ENABLED" env-default:"false"`
-		TLSKey     string `envconfig:"KAFKA_TLS_KEY"     env-default:""`
-		TLSCert    string `envconfig:"KAFKA_TLS_CERT"    env-default:""`
-		CACerts    string `envconfig:"KAFKA_CA_CERTS"    env-default:""`
+		TLSEnabled bool   `env:"KAFKA_TLS_ENABLED" env-default:"false"`
+		TLSKey     string `env:"KAFKA_TLS_KEY"     env-default:""`
+		TLSCert    string `env:"KAFKA_TLS_CERT"    env-default:""`
+		CACerts    string `env:"KAFKA_CA_CERTS"    env-default:""`
 
 		// Consumer specific parameters
-		Group             string        `envconfig:"KAFKA_GROUP"              env-default:"default-group"`
-		RebalanceStrategy string        `envconfig:"KAFKA_REBALANCE_STRATEGY" env-default:"roundrobin"`
-		RebalanceTimeout  time.Duration `envconfig:"KAFKA_REBALANCE_TIMEOUT"  env-default:"60s"`
-		InitOffsets       string        `envconfig:"KAFKA_INIT_OFFSETS"       env-default:"latest"`
-		CommitInterval    time.Duration `envconfig:"KAFKA_COMMIT_INTERVAL"    env-default:"10s"`
+		Group             string        `env:"KAFKA_GROUP"              env-default:"default-group"`
+		RebalanceStrategy string        `env:"KAFKA_REBALANCE_STRATEGY" env-default:"roundrobin"`
+		RebalanceTimeout  time.Duration `env:"KAFKA_REBALANCE_TIMEOUT"  env-default:"60s"`
+		InitOffsets       string        `env:"KAFKA_INIT_OFFSETS"       env-default:"latest"`
+		CommitInterval    time.Duration `env:"KAFKA_COMMIT_INTERVAL"    env-default:"10s"`
 
 		// Producer specific parameters
-		FlushInterval time.Duration `envconfig:"KAFKA_FLUSH_INTERVAL"         env-default:"1s"`
+		FlushInterval time.Duration `env:"KAFKA_FLUSH_INTERVAL"         env-default:"1s"`
 	}
 )
+
+func (c Config) DatabaseStr() string {
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable&timezone=utc", c.Postgres.User, c.Postgres.Password, c.Postgres.Host, c.Postgres.Name)
+}
