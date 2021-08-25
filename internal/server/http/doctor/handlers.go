@@ -135,7 +135,6 @@ func (h *Handlers) DeleteDoctor(w http.ResponseWriter, r *http.Request) {
 func isRequestValid(nu *entity.Doctor) bool {
 	validate := validator.New()
 	err := validate.Struct(nu)
-	fmt.Println(err)
 	return err == nil
 }
 

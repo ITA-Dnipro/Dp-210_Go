@@ -3,7 +3,6 @@ package appointment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
@@ -20,7 +19,7 @@ type UsersUsecases interface {
 	GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error)
 	GetByDoctorID(ctx context.Context, id string) ([]entity.Appointment, error)
 	GetAll(ctx context.Context) (res []entity.Appointment, err error)
-	Create(ctx context.Context, a *entity.Appointment) error
+	CreateRequest(ctx context.Context, a *entity.Appointment) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -52,7 +51,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.PatientID = id
-	if err := h.usecases.Create(r.Context(), &a); err != nil {
+	if err := h.usecases.CreateRequest(r.Context(), &a); err != nil {
 		h.logger.Error("can't create a appointment", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -80,7 +79,6 @@ func (h *Handlers) GetAppointments(w http.ResponseWriter, r *http.Request) {
 func isRequestValid(a *entity.Appointment) bool {
 	validate := validator.New()
 	err := validate.Struct(a)
-	fmt.Println(err)
 	return err == nil
 }
 

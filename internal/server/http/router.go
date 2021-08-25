@@ -15,10 +15,6 @@ import (
 	doctorHandlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/doctor"
 	doctorUsecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
 
-	appointmentRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/appointment"
-	appointmentHandlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/appointment"
-	appointmentUsecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
-
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	"github.com/go-chi/chi"
@@ -30,17 +26,14 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 	ur := userRepo.NewRepository(db)
 	dr := doctorRepo.NewRepository(db)
 	pr := patientRepo.NewRepository(db)
-	ar := appointmentRepo.NewRepository(db)
 
 	uc := userUsecases.NewUsecases(ur)
 	dc := doctorUsecases.NewUsecases(dr, ur)
 	pc := patientUsecases.NewUsecases(pr, ur)
-	ac := appointmentUsecases.NewUsecases(ar, dr, pr)
 
 	uh := userHandlers.NewHandlers(uc, logger)
 	ph := patientHandlers.NewHandlers(pc, logger)
 	dh := doctorHandlers.NewHandlers(dc, logger)
-	ah := appointmentHandlers.NewHandlers(ac, logger)
 
 	md := &middleware.Middleware{Logger: logger}
 
@@ -57,17 +50,9 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 				r.Get("/doctors/{id}", dh.GetDoctor) // GET /api/v1/doctors/6ba7b810-9dad-11d1-80b4-00c04fd430c8
 			})
 			r.Group(func(r chi.Router) { // route with permissions
-				r.Use(md.RoleOnly(role.Patient))
-				r.Post("/appointments", ah.CreateAppointment) // Post /api/v1/appointment
-			})
-			r.Group(func(r chi.Router) { // route with permissions
 				r.Use(md.RoleOnly(role.Doctor, role.Admin))
 				r.Get("/patients", ph.GetPatients)     // GET /api/v1/patients
 				r.Get("/patients/{id}", ph.GetPatient) // GET /api/v1/patients/6ba7b810-9dad-11d1-80b4-00c04fd430c8
-			})
-			r.Group(func(r chi.Router) { // route with permissions
-				r.Use(md.RoleOnly(role.Patient, role.Doctor, role.Admin))
-				r.Get("/appointments", ah.GetAppointments) // GET /api/v1/appointments
 			})
 			r.Group(func(r chi.Router) { // route with permissions
 				r.Use(md.RoleOnly(role.Operator, role.Admin))

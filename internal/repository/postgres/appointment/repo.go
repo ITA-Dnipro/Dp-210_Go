@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/jackc/pgx"
 
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
 )
@@ -27,8 +27,11 @@ type Repository struct {
 
 // Create Add new appointment.
 func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
-	query := `INSERT INTO appointments (id , doctor_id,  patient_id , reason, time_range) 
-              VALUES ( $1, $2, $3, $4, tstzrange($5, $6))`
+	query := `
+	INSERT INTO appointments 
+	(id , doctor_id,  patient_id , reason, time_range) 
+	VALUES 
+	( $1, $2, $3, $4, tstzrange($5, $6))`
 	res, err := r.storage.ExecContext(ctx,
 		query,
 		a.ID,
@@ -38,30 +41,9 @@ func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
 		a.From,
 		a.To,
 	)
-
 	if err != nil {
-		if err, ok := err.(pgx.PgError); ok {
-			fmt.Println("Severity:", err.Severity)
-			fmt.Println("Code:", err.Code)
-			fmt.Println("Message:", err.Message)
-			fmt.Println("Detail:", err.Detail)
-			fmt.Println("Hint:", err.Hint)
-			fmt.Println("Position:", err.Position)
-			fmt.Println("InternalPosition:", err.InternalPosition)
-			fmt.Println("Where:", err.Where)
-			fmt.Println("Schema:", err.SchemaName)
-			fmt.Println("Table:", err.TableName)
-			fmt.Println("Column:", err.ColumnName)
-			fmt.Println("DataTypeName:", err.DataTypeName)
-			fmt.Println("Constraint:", err.ConstraintName)
-			fmt.Println("File:", err.File)
-			fmt.Println("Line:", err.Line)
-			fmt.Println("Routine:", err.Routine)
-		}
-		return fmt.Errorf("store error: %w", err)
+		return fmt.Errorf("create rows:%w", err)
 	}
-	_, ok := err.(pgx.PgError)
-	fmt.Println("case pg", ok)
 
 	rowsAfected, err := res.RowsAffected()
 	if err != nil {
@@ -123,24 +105,45 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 
 //GetAll get all appointments.
 func (r *Repository) GetAll(ctx context.Context) ([]entity.Appointment, error) {
-	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments ORDER BY lower(time_range)`
+	query := `
+	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+	FROM appointments 
+	ORDER BY lower(time_range)`
 	return r.fetch(ctx, query)
+}
+
+//GetBeforeTime get all appointments before time.
+func (r *Repository) GetBeforeTime(ctx context.Context, t time.Time) ([]entity.Appointment, error) {
+	query := `
+	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+	FROM appointments WHERE upper(time_range) < $1 
+	ORDER BY lower(time_range)`
+	return r.fetch(ctx, query, t)
 }
 
 //GetByPatientID get all appointments by patient id.
 func (r *Repository) GetByPatientID(ctx context.Context, id string) ([]entity.Appointment, error) {
-	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE patient_id = $1 ORDER BY lower(time_range)`
+	query := `
+	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+	FROM appointments 
+	WHERE patient_id = $1 ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, id)
 }
 
 //GetByDoctorID get all appointments by doctor id.
 func (r *Repository) GetByDoctorID(ctx context.Context, id string) ([]entity.Appointment, error) {
-	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE doctor_id = $1 ORDER BY lower(time_range)`
+	query := `
+	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+	FROM appointments WHERE doctor_id = $1 
+	ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, id)
 }
 
 //GetByDoctorID get all appointments by user id.
 func (r *Repository) GetByUserID(ctx context.Context, id string) ([]entity.Appointment, error) {
-	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) FROM appointments WHERE doctor_id = $1 OR patient_id = $1 ORDER BY lower(time_range)`
+	query := `
+	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+	FROM appointments WHERE doctor_id = $1 OR patient_id = $1 
+	ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, id)
 }

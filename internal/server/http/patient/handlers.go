@@ -101,7 +101,6 @@ func (h *Handlers) DeletePatient(w http.ResponseWriter, r *http.Request) {
 func isRequestValid(nu *entity.Patient) bool {
 	validate := validator.New()
 	err := validate.Struct(nu)
-	fmt.Println(err)
 	return err == nil
 }
 

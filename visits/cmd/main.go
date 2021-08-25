@@ -8,7 +8,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/kafka"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
 	"github.com/ITA-Dnipro/Dp-210_Go/visits/config"
@@ -50,10 +52,24 @@ func run(logger *zap.Logger) error {
 		log.Printf("visits: Database Stopping")
 		db.Close()
 	}()
+	events, err := kafka.NewEvents([]string{"localhost:9092"})
+	if err != nil {
+		return fmt.Errorf("connecting to kafka: %w", err)
+	}
+
+	events.On(kafka.MailTopic, func(payload []byte) error {
+		fmt.Println(string(payload))
+		return nil
+	})
+	events.On(kafka.BillTopic, func(payload []byte) error {
+		fmt.Println(string(payload))
+		return nil
+	})
+
 	dr := doctorRepo.NewRepository(db)
 	pr := patientRepo.NewRepository(db)
 	ar := appointmentRepo.NewRepository(db)
-	ac := appointmentUsecases.NewUsecases(ar, dr, pr)
+	ac := appointmentUsecases.NewUsecases(ar, dr, pr, events)
 	ah := appointmentHandlers.NewHandlers(ac, logger)
 	md := &middleware.Middleware{Logger: logger}
 
@@ -84,6 +100,27 @@ func run(logger *zap.Logger) error {
 		serverErrors <- api.ListenAndServe()
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	go func(ctx context.Context) {
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				ac.DeleteOld(ctx, time.Now())
+			case <-ctx.Done():
+				ticker.Stop()
+				return
+			}
+		}
+	}(ctx)
+
+	events.On(kafka.AppoinmentTopic, func(payload []byte) error {
+		if err := ac.CreateEvent(payload); err != nil {
+			logger.Error("visits: create error:", zap.Error(err))
+		}
+		return nil
+	})
+	_ = cancel
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
