@@ -40,7 +40,7 @@ type PasswordUsecases interface {
 func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordRestoreReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "is not an email", w)
+		h.writeErrorResponse(http.StatusBadRequest, "wrong request format", w)
 		return
 	}
 
