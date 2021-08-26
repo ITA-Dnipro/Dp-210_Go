@@ -81,6 +81,21 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (e
 	return user, nil
 }
 
+func (uc *Usecases) SetNewPassword(ctx context.Context, password string, user *entity.User) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("set new password: %w", err)
+	}
+
+	user.PasswordHash = hash
+	err = uc.userRepo.Update(ctx, user)
+	if err != nil {
+		return fmt.Errorf("set new password: %w", err)
+	}
+
+	return nil
+}
+
 func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {
 	return fmt.Errorf("delete passw code: %w", uc.cache.Del(ctx, email))
 }
