@@ -55,6 +55,7 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.PatientID = id
+	a.DoctorID = chi.URLParam(r, idKey) // Gets params
 	if err := h.usecase.CreateRequest(r.Context(), &a); err != nil {
 		h.logger.Error("can't create a appointment", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)

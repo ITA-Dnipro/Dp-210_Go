@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS appointments (
    patient_id uuid REFERENCES patients (id),
    reason varchar(150),
    time_range tstzrange,
-   EXCLUDE USING gist (doctor_id WITH =, patient_id WITH =, time_range WITH &&)
+   EXCLUDE USING gist (doctor_id WITH =, time_range WITH &&)
 );
 
 INSERT INTO roles (name)

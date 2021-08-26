@@ -80,7 +80,7 @@ func run(logger *zap.Logger) error {
 		r.Use(md.AuthMiddleware)
 		r.Group(func(r chi.Router) { // route with permissions
 			r.Use(md.RoleOnly(role.Patient))
-			r.Post("/appointments", ah.CreateAppointment) // Post /api/v1/appointment
+			r.Post("/appointments/doctors/{id}", ah.CreateAppointment) // Post /api/v1/appointment
 		})
 		r.Group(func(r chi.Router) { // route with permissions
 			r.Use(md.RoleOnly(role.Patient, role.Doctor, role.Admin, role.Operator))

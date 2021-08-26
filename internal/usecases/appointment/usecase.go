@@ -56,6 +56,9 @@ type Usecases struct {
 }
 
 func (uc *Usecases) CreateRequest(ctx context.Context, a *entity.Appointment) error {
+	// if a.From.Before(time.Now().UTC()) {
+	// 	return fmt.Errorf("can't create appointment in past %s", a.From)
+	// }
 	d, err := uc.dr.GetByID(ctx, a.DoctorID)
 	if err != nil {
 		return fmt.Errorf("can't find a doctor with %v id", a.DoctorID)
