@@ -59,7 +59,7 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
 		return
 	}
 	var tkn struct {
@@ -67,10 +67,10 @@ func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
 	}
 	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
 		return
 	}
-	h.logger.Info("ger all request succeeded")
+
 	h.render(w, tkn)
 }
 
@@ -98,7 +98,6 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("ger all request succeeded")
 	h.render(w, users)
 }
 
