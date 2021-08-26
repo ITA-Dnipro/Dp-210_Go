@@ -81,5 +81,5 @@ func main() {
 	r := router.NewRouter(db, logger, gmail, jwtAuth)
 	// Start server
 	log.Println("Initialized successfully")
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r))
 }
