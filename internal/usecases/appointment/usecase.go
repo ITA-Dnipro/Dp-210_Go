@@ -56,19 +56,6 @@ type Usecases struct {
 }
 
 func (uc *Usecases) CreateRequest(ctx context.Context, a *entity.Appointment) error {
-	return uc.events.Emit(kafka.AppoinmentTopic, a)
-}
-func (uc *Usecases) CreateEvent(payload []byte) error {
-	var a entity.Appointment
-	if err := json.Unmarshal(payload, &a); err != nil {
-		return fmt.Errorf("marshaling appointment:%w", err)
-	}
-	ctx := context.Background()
-	return uc.Create(ctx, &a)
-}
-
-// Create Add new appointment.
-func (uc *Usecases) Create(ctx context.Context, a *entity.Appointment) error {
 	d, err := uc.dr.GetByID(ctx, a.DoctorID)
 	if err != nil {
 		return fmt.Errorf("can't find a doctor with %v id", a.DoctorID)
@@ -79,6 +66,18 @@ func (uc *Usecases) Create(ctx context.Context, a *entity.Appointment) error {
 	// }
 	_ = d
 	a.ID = uuid.New().String()
+	return uc.events.Emit(kafka.AppoinmentTopic, a)
+}
+func (uc *Usecases) CreateFromEvent(payload []byte) error {
+	var a entity.Appointment
+	if err := json.Unmarshal(payload, &a); err != nil {
+		return fmt.Errorf("marshaling appointment:%w", err)
+	}
+	return uc.Create(context.Background(), &a)
+}
+
+// Create Add new appointment.
+func (uc *Usecases) Create(ctx context.Context, a *entity.Appointment) error {
 
 	if err := uc.ar.Create(ctx, a); err != nil {
 		return fmt.Errorf("creating appointment:%w", err)

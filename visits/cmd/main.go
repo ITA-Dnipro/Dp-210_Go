@@ -17,9 +17,10 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/visits/store/postgres"
 	"github.com/go-chi/chi"
 
-	appointmentRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/appointment"
 	doctorRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/doctor"
 	patientRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/patient"
+
+	appointmentRepo "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/appointment"
 	appointmentHandlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/appointment"
 	appointmentUsecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/appointment"
 
@@ -85,6 +86,10 @@ func run(logger *zap.Logger) error {
 			r.Use(md.RoleOnly(role.Patient, role.Doctor, role.Admin, role.Operator))
 			r.Get("/appointments", ah.GetAppointments) // GET /api/v1/appointments
 		})
+		r.Group(func(r chi.Router) { // route with permission Admin.
+			r.Use(md.RoleOnly(role.Admin))
+			r.Delete("/appointments/{id}", ah.DeleteAppointment) // DELETE /api/v1/appointments/6ba7b810-9dad-11d1-80b4-00c04fd430c8
+		})
 	})
 	logger.Info("visits: Initializing API support")
 	api := http.Server{
@@ -115,7 +120,7 @@ func run(logger *zap.Logger) error {
 	}(ctx)
 
 	events.On(kafka.AppoinmentTopic, func(payload []byte) error {
-		if err := ac.CreateEvent(payload); err != nil {
+		if err := ac.CreateFromEvent(payload); err != nil {
 			logger.Error("visits: create error:", zap.Error(err))
 		}
 		return nil

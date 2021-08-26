@@ -24,7 +24,7 @@ type fnHandler func(payload []byte) error
 
 func NewEvents(brokers []string) (Events, error) {
 	config := sarama.NewConfig()
-	//config.Producer.Retry.Max = 5
+	config.Producer.Retry.Max = 5
 	//config.Producer.Partitioner = sarama.NewRandomPartitioner
 	//config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Return.Successes = true
