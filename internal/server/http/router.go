@@ -48,8 +48,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 				}
 
 				patientCard := entity.New(strings.Split(records[5], ";"))
-				fmt.Printf("%#v\n", *patientCard)
-				// Send patientCard to accept by Operator.
+				patientCard.SendToDb()
 			})
 			r.Post("/info", func(w http.ResponseWriter, r *http.Request) {
 				var patientCard entity.PatientCard
@@ -58,8 +57,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
 					return
 				}
 				patientCard.CorrectData()
-				fmt.Printf("%#v\n", patientCard)
-				// Send patientCard to accept by Operator.
+				patientCard.SendToDb()
 			})
 		})
 		r.Route("/", func(r chi.Router) { // route with permissions

@@ -1,7 +1,14 @@
 package entity
 
 import (
+	"context"
+	"fmt"
+	"github.com/ITA-Dnipro/Dp-210_Go/config"
 	"github.com/google/uuid"
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/jackc/pgx/v4"
+	"log"
+	"os"
 	"time"
 )
 
@@ -60,4 +67,27 @@ func (pc *PatientCard) CorrectData() {
 	}
 	pc.RegDayTime = time.Now()
 	pc.regDayStr = pc.RegDayTime.Format("2006-01-02")
+}
+
+func (pc *PatientCard) SendToDb() {
+	var env config.Env
+	err := cleanenv.ReadEnv(&env)
+	if err != nil {
+		log.Fatal(fmt.Errorf("read env: %w", err))
+	}
+
+	conn, err := pgx.Connect(context.Background(), env.DatabaseStr())
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	}
+	defer conn.Close(context.Background())
+
+	query := `INSERT INTO data_from_patients(id, first_name, last_name, email, gender, birthday_str, phone, 
+                               address, job_info, disability, allergies, reg_day, patient_role) 
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
+	if _, err = conn.Exec(context.Background(), query, pc.uuid, pc.FirstName, pc.LastName, pc.Email,
+		pc.Gender, pc.BirthDayStr, pc.Phone, pc.Address, pc.JobInfo, pc.DisabilityB, pc.AllergiesB,
+		pc.regDayStr, pc.Role); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	}
 }
