@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"fmt"
 	"time"
@@ -34,9 +35,9 @@ var (
 type JwtToken string
 
 type Cache interface {
-	Get(key string) (string, error)
-	Set(key, value string) error
-	Del(key string) error
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key, value string) error
+	Del(ctx context.Context, key string) error
 }
 
 type JwtAuth struct {
@@ -87,7 +88,7 @@ func (auth *JwtAuth) CreateToken(user UserAuth) (JwtToken, error) {
 		return "", fmt.Errorf("sign token: %w", err)
 	}
 
-	if err = auth.Cache.Set(user.Id, t); err != nil {
+	if err = auth.Cache.Set(context.Background(), user.Id, t); err != nil {
 		return "", fmt.Errorf("save token for: %v; %w", user.Id, err)
 	}
 
@@ -125,7 +126,7 @@ func (auth *JwtAuth) ValidateToken(t JwtToken) (UserAuth, error) {
 }
 
 func (auth *JwtAuth) InvalidateToken(userId string) error {
-	if err := auth.Cache.Del(userId); err != nil {
+	if err := auth.Cache.Del(context.Background(), userId); err != nil {
 		return fmt.Errorf("invalidate token: %w", err)
 	}
 
@@ -133,7 +134,7 @@ func (auth *JwtAuth) InvalidateToken(userId string) error {
 }
 
 func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
-	tk, err := auth.Cache.Get(userId)
+	tk, err := auth.Cache.Get(context.Background(), userId)
 	if err != nil {
 		return fmt.Errorf("user %v logged out", userId)
 	}

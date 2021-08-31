@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -8,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/cache/memory"
+	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/redis"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
@@ -48,12 +49,6 @@ func main() {
 		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
 	}
 
-	c := memory.NewJwtCache()
-	jwtAuth, err := auth.NewJwtAuth(c, 15*time.Minute)
-	if err != nil {
-		log.Fatal(fmt.Errorf("jwt auth: %w", err))
-	}
-
 	db, err := sql.Open("pgx", env.DatabaseStr())
 
 	if err != nil {
@@ -76,9 +71,17 @@ func main() {
 		DB:       0,
 	})
 
-	_ = rdb
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		log.Fatal(fmt.Errorf("connect to redis server: %w", err))
+	}
 
-	r := router.NewRouter(db, logger, gmail, jwtAuth)
+	tokenExp := 15 * time.Minute
+	jwtAuth, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, tokenExp, "jwtToken"), tokenExp)
+	if err != nil {
+		log.Fatal(fmt.Errorf("jwt auth: %w", err))
+	}
+
+	r := router.NewRouter(db, logger, gmail, jwtAuth, rdb)
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%v:%v", env.AppHost, env.AppPort), r))
 }
