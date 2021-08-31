@@ -6,11 +6,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/cache/memory"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
 	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -39,6 +44,17 @@ func main() {
 
 	logger, _ := zap.NewProduction()
 
+	gmail, err := mail.NewGmailEmailSender("config.json", "token.json")
+	if err != nil {
+		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
+	}
+
+	c := memory.NewJwtCache()
+	jwtAuth, err := auth.NewJwtAuth(c, 15*time.Minute)
+	if err != nil {
+		log.Fatal(fmt.Errorf("jwt auth: %w", err))
+	}
+
 	db, err := sql.Open("pgx", env.DatabaseStr())
 
 	if err != nil {
@@ -57,7 +73,15 @@ func main() {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
 
-	r := router.NewRouter(db, logger)
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     env.RedisUrl,
+		Password: env.RedisPassword,
+		DB:       0,
+	})
+
+	_ = rdb
+
+	r := router.NewRouter(db, logger, gmail, jwtAuth)
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r))
 }
