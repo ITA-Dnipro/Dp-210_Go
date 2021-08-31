@@ -41,18 +41,18 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/login", hs.GetToken) // POST /api/v1/login
+		// r.Post("/login", hs.GetToken) // POST /api/v1/login
 
-		r.Group(func(r chi.Router) {
-			r.Use(md.AuthMiddleware)
-			r.Post("/logout", hs.LogOut)
-		})
+		// r.Group(func(r chi.Router) {
+		// 	r.Use(md.AuthMiddleware)
+		// 	r.Post("/logout", hs.LogOut)
+		// })
 
 		r.Route("/password", func(r chi.Router) {
-			r.Route("/restore", func(r chi.Router) {
-				r.Post("/code/send", paswHandler.SendRestorePasswordCode)
-				r.Post("/code/check", paswHandler.CheckPasswordCode)
-			})
+			// r.Route("/restore", func(r chi.Router) {
+			// 	r.Post("/code/send", paswHandler.SendRestorePasswordCode)
+			// 	r.Post("/code/check", paswHandler.CheckPasswordCode)
+			// })
 
 			r.Group(func(r chi.Router) {
 				r.Use(md.AuthMiddleware)

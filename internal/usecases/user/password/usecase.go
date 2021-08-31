@@ -67,6 +67,18 @@ func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (
 	return code, nil
 }
 
+func (uc *Usecases) Auth(ctx context.Context, email, password string) (u entity.User, err error) {
+	u, err = uc.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
+		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
+	}
+
+	return u, nil
+}
+
 func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (entity.User, error) {
 	ent, err := uc.cache.Get(ctx, pc.Email)
 	if err != nil || ent != pc.Code {
