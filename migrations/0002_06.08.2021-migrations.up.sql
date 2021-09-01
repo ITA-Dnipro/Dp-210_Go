@@ -3,12 +3,6 @@ CREATE TABLE IF NOT EXISTS roles (
    description varchar(50)
 );
 
-CREATE TABLE IF NOT EXISTS permisions (
-   name varchar(25) PRIMARY KEY,
-   description varchar(50),
-   role_name varchar REFERENCES roles (name)
-);
-
 CREATE TABLE IF NOT EXISTS users (
    id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
    name varchar(25) UNIQUE NOT NULL,
@@ -17,48 +11,29 @@ CREATE TABLE IF NOT EXISTS users (
    role varchar REFERENCES roles (name)
 );
 
-CREATE TABLE IF NOT EXISTS cards (
-   id uuid PRIMARY KEY
-);
-
 CREATE TABLE IF NOT EXISTS patients (
-   id uuid PRIMARY KEY,
+   id uuid PRIMARY KEY REFERENCES users (id),
    first_name varchar(25),
-   last_name varchar(25),
-   user_id uuid UNIQUE REFERENCES users (id),
-   card_id uuid UNIQUE REFERENCES cards (id)
-);
-
-CREATE TABLE IF NOT EXISTS schedules (
-   id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
-   name varchar(25) NOT NULL,
-   description varchar(150),
-   sun tsrange,
-   mon tsrange,
-   tue tsrange,
-   wed tsrange,
-   thu tsrange,
-   fri tsrange,
-   sat tsrange
+   last_name varchar(25)
 );
 
 CREATE TABLE IF NOT EXISTS doctors (
-   id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
-   user_id uuid REFERENCES users (id),
+   id uuid PRIMARY KEY REFERENCES users (id),
    first_name varchar(25),
    last_name varchar(25),
    speciality varchar NOT NULL,
-   schedule_id uuid REFERENCES schedules (id)
+   start_at timestamp,
+   end_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS appointments (
-   id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
+   appointment_id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
    doctor_id uuid REFERENCES doctors (id),
    patient_id uuid REFERENCES patients (id),
    reason varchar(150),
-   result varchar,
-   timeRange tsrange
+   time_range tstzrange,
+   EXCLUDE USING gist (doctor_id WITH =, patient_id WITH =, time_range WITH &&)
 );
 
 INSERT INTO roles (name)
-   VALUES ('admin'), ('operator'), ('viewer')
+   VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient')

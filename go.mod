@@ -4,10 +4,11 @@ go 1.16
 
 require (
 	cloud.google.com/go v0.90.0 // indirect
-	github.com/go-chi/chi v1.5.4
-	github.com/go-playground/validator/v10 v10.8.0
-	github.com/go-redis/redis/v8 v8.11.3
-	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/go-chi/chi v1.5.4 // indirect
+	github.com/go-playground/validator/v10 v10.8.0 // indirect
+	github.com/go-redis/redis/v8 v8.11.3 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0
