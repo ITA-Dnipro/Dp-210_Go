@@ -56,6 +56,7 @@ func (ges *GmailEmailSender) InitializeService() error {
 	}
 
 	ges.srv = srv
+	log.Println("gmail email sender successfully initialized")
 	return nil
 }
 
@@ -85,10 +86,10 @@ func getClient(config *oauth2.Config, tokFile string) (*http.Client, error) {
 	// time.
 
 	tok, err := tokenFromFile(tokFile)
-	log.Println(fmt.Errorf("get token from file %v, %w", tokFile, err))
 	if err == nil {
 		return config.Client(context.Background(), tok), err
 	}
+	log.Println(fmt.Errorf("get token from file %v, %w", tokFile, err))
 
 	tok, err = getTokenFromWeb(config)
 	if err != nil {

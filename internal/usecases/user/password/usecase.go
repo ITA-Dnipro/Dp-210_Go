@@ -16,7 +16,6 @@ type Usecases struct {
 }
 
 type UsersRepository interface {
-	UserExists(ctx context.Context, email string) bool
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
 	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
@@ -46,7 +45,8 @@ func NewUsecases(es EmailSender, cg CodeGenerator, ur UsersRepository, cache Cac
 }
 
 func (uc *Usecases) SendRestorePasswordCode(ctx context.Context, email string) (code string, err error) {
-	if !uc.userRepo.UserExists(ctx, email) {
+	u, err := uc.userRepo.GetByEmail(ctx, email)
+	if err != nil || u.Email != email {
 		return "", fmt.Errorf("no such user with email: %v", email)
 	}
 
@@ -79,6 +79,21 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (e
 	}
 
 	return user, nil
+}
+
+func (uc *Usecases) SetNewPassword(ctx context.Context, password string, user *entity.User) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("set new password: %w", err)
+	}
+
+	user.PasswordHash = hash
+	err = uc.userRepo.Update(ctx, user)
+	if err != nil {
+		return fmt.Errorf("set new password: %w", err)
+	}
+
+	return nil
 }
 
 func (uc *Usecases) DeleteCode(ctx context.Context, email string) error {

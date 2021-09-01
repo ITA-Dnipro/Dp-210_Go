@@ -34,12 +34,13 @@ type PasswordUsecases interface {
 	Authenticate(ctx context.Context, pc entity.PasswordCode) (entity.User, error)
 	DeleteCode(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, passw entity.UserNewPassword) error
+	SetNewPassword(ctx context.Context, password string, user *entity.User) error
 }
 
 func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordRestoreReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "is not an email", w)
+		h.writeErrorResponse(http.StatusBadRequest, "wrong request format", w)
 		return
 	}
 
@@ -51,10 +52,10 @@ func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordCode
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "not a restore password data format", w)
+		h.writeErrorResponse(http.StatusBadRequest, "wrong data format", w)
 		return
 	}
 
@@ -64,12 +65,18 @@ func (h *Handlers) CheckPasswordCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tk, err := h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
-	if err != nil {
-		h.writeErrorResponse(http.StatusInternalServerError, "could not generate token", w)
+	defer h.paswCases.DeleteCode(r.Context(), req.Email)
+
+	if err = h.paswCases.SetNewPassword(r.Context(), req.NewPassword, &user); err != nil {
+		h.writeErrorResponse(http.StatusInternalServerError, "request failed", w)
+		return
 	}
 
-	h.paswCases.DeleteCode(r.Context(), req.Email)
+	tk, err := h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	if err != nil {
+		h.writeErrorResponse(http.StatusInternalServerError, "request failed", w)
+		return
+	}
 
 	h.render(w, tk)
 }

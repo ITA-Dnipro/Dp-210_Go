@@ -61,7 +61,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 		r.Route("/password", func(r chi.Router) {
 			r.Route("/restore", func(r chi.Router) {
 				r.Post("/code/send", paswHandler.SendRestorePasswordCode)
-				r.Post("/code/check", paswHandler.CheckPasswordCode)
+				r.Post("/", paswHandler.RestorePassword)
 			})
 
 			r.Group(func(r chi.Router) {
