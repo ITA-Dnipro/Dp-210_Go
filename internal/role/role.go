@@ -8,6 +8,10 @@ const (
 	Admin Role = "admin"
 	// Operator represent an operator permission role.
 	Operator Role = "operator"
+	// Doctor represent an doctor permission role.
+	Doctor Role = "doctor"
+	// Patient represent an patient permission role.
+	Patient Role = "patient"
 	// Viewer represent an viewer permission role.
 	Viewer Role = "viewer"
 )
