@@ -2,8 +2,9 @@ package http
 
 import (
 	"database/sql"
+	"time"
 
-	restore "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/restore"
+	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/redis"
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/user"
@@ -13,6 +14,7 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user"
 	usecasesPasw "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/user/password"
+	"github.com/go-redis/redis/v8"
 
 	postgresDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/doctor"
 	handlersDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/doctor"
@@ -29,7 +31,7 @@ type Auth interface {
 }
 
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, auth Auth) chi.Router {
+func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, auth Auth, rdb *redis.Client) chi.Router {
 	repo := postgres.NewRepository(db)
 	repoD := postgresDoctor.NewRepository(db)
 
@@ -37,7 +39,12 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
-	paswCase := usecasesPasw.NewUsecases(mailSender, usecasesPasw.SixDigitGenerator{}, repo, restore.NewCodeRepo(db))
+	paswCase := usecasesPasw.NewUsecases(
+		mailSender,
+		usecasesPasw.SixDigitGenerator{},
+		repo,
+		cache.NewRestoreCodeCache(rdb, time.Minute*5, "restore"),
+	)
 
 	md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
 	hs := handlers.NewHandlers(usecase, logger, auth)
