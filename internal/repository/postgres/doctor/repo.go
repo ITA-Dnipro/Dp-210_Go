@@ -53,16 +53,17 @@ func (r *Repository) Create(ctx context.Context, d *entity.Doctor) error {
 
 // Update updates a doctor
 func (r *Repository) Update(ctx context.Context, d *entity.Doctor) error {
-	query := `UPDATE doctors SET id = $1, first_name = $2, 
-			  last_name = $3, speciality = $4, start_at = $5, end_at = $6 `
+	query := `UPDATE doctors SET first_name = $1, 
+			  last_name = $2, speciality = $3, start_at = $4, end_at = $5
+			  WHERE id = $6;`
 	res, err := r.storage.ExecContext(ctx,
 		query,
-		&d.ID,
 		&d.FirstName,
 		&d.LastName,
 		&d.Speciality,
 		&d.StartAt,
 		&d.EndAt,
+		&d.ID,
 	)
 
 	if err != nil {
