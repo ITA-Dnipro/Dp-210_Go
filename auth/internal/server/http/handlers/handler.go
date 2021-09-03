@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"go.uber.org/zap"
 )
 
 type Auth interface {
-	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
+	CreateToken(user usecase.UserAuth) (usecase.JwtToken, error)
 	InvalidateToken(userId string) error
 }
 

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 )
@@ -44,7 +44,7 @@ func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tk, err := h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	tk, err := h.auth.CreateToken(usecase.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, requestFailed, w)
 		return

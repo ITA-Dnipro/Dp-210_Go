@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"net/http"
 	"time"
 
@@ -15,7 +15,7 @@ type UserUsecases interface {
 }
 
 type Auth interface {
-	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+	ValidateToken(t usecase.JwtToken) (usecase.UserAuth, error)
 }
 
 type Middleware struct {

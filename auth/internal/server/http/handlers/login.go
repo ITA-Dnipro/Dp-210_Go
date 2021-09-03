@@ -3,9 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"net/http"
 )
 
@@ -23,9 +23,9 @@ func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var tkn struct {
-		Token auth.JwtToken `json:"token"`
+		Token usecase.JwtToken `json:"token"`
 	}
-	tkn.Token, err = h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	tkn.Token, err = h.auth.CreateToken(usecase.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusUnauthorized, incorrectEmailOrPassword, w)
 		return

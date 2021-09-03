@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
 	cache "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/cache/redis"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 
@@ -21,7 +20,7 @@ import (
 func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client) (chi.Router, error) {
 	repo := postgres.NewRepository(db)
 	expire := time.Minute * 15
-	jwt, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
+	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
 	if err != nil {
 		return nil, err
 	}
