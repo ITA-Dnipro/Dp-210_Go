@@ -147,6 +147,6 @@ type AuthClaims struct {
 }
 
 type UserAuth struct {
-	Id   string
-	Role entity.Role
+	Id   string      `userId`
+	Role entity.Role `userRole`
 }

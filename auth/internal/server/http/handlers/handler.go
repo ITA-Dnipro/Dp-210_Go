@@ -10,6 +10,7 @@ import (
 type Auth interface {
 	CreateToken(user usecase.UserAuth) (usecase.JwtToken, error)
 	InvalidateToken(userId string) error
+	ValidateToken(t usecase.JwtToken) (usecase.UserAuth, error)
 }
 
 type PasswordUsecases interface {

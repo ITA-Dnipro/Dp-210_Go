@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -12,8 +14,12 @@ type contextKey string
 type JwtToken string
 
 type User struct {
-	Id   string
-	Role role.Role
+	Id   string    `userId`
+	Role role.Role `userRole`
+}
+
+type UserToken struct {
+	Token JwtToken `json:"token"`
 }
 
 var (
@@ -30,12 +36,31 @@ func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		user := User{"", role.Admin} //, err := md.Auth.ValidateToken(t)
-		//if err != nil {
-		//	w.WriteHeader(http.StatusUnauthorized)
-		//	w.Write([]byte("Unauthorized"))
-		//	return
-		//}
+		jsoned, err := json.Marshal(UserToken{Token: t})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		resp, err := http.Post(md.AuthUrl, "application/json", bytes.NewReader(jsoned))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		code := resp.StatusCode
+		if code != http.StatusOK {
+			w.WriteHeader(code)
+			w.Write([]byte(resp.Status))
+			return
+		}
+
+		var user User
+		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		ctx := contextWithUser(r.Context(), ReqUser{Id: user.Id, Role: user.Role})
 		next.ServeHTTP(w, r.WithContext(ctx))

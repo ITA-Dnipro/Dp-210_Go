@@ -16,6 +16,7 @@ type UserUsecases interface {
 type Middleware struct {
 	Logger *zap.Logger
 	//UserUC UserUsecases
+	AuthUrl string
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
