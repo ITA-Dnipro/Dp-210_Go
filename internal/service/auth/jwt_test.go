@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func NewMockCache() *MockCache {
 	return &MockCache{make(map[string]string)}
 }
 
-func (c *MockCache) Get(key string) (string, error) {
+func (c *MockCache) Get(ctx context.Context, key string) (string, error) {
 	val, ok := c.cache[key]
 	if !ok {
 		return "", fmt.Errorf("no such element")
@@ -83,12 +84,12 @@ func (c *MockCache) Get(key string) (string, error) {
 	return val, nil
 }
 
-func (c *MockCache) Set(key, value string) error {
+func (c *MockCache) Set(ctx context.Context, key, value string) error {
 	c.cache[key] = value
 	return nil
 }
 
-func (c *MockCache) Del(key string) error {
+func (c *MockCache) Del(ctx context.Context, key string) error {
 	delete(c.cache, key)
 	return nil
 }

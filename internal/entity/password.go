@@ -5,6 +5,7 @@ type PasswordRestoreReq struct {
 }
 
 type PasswordCode struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
+	Email       string `json:"email"`
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
 }

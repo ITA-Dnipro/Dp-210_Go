@@ -44,33 +44,34 @@ func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
 	return &Handlers{userCases: uc, logger: log}
 }
 
-// // GetToken by basic auth.
-// func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
-// 	var newUser entity.NewUser
-// 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
-// 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
-// 		return
-// 	}
-// 	if ok := isRequestValid(&newUser); !ok {
-// 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
-// 		return
-// 	}
-// 	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
-// 	if err != nil {
-// 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
-// 		return
-// 	}
-// 	var tkn struct {
-// 		Token authPkg.JwtToken `json:"token"`
-// 	}
-// 	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
-// 	if err != nil {
-// 		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
-// 		return
-// 	}
-// 	h.logger.Info("ger all request succeeded")
-// 	h.render(w, tkn)
-// }
+//copy it out
+func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
+	var newUser entity.NewUser
+	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
+		return
+	}
+	if ok := isRequestValid(&newUser); !ok {
+		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
+		return
+	}
+	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	if err != nil {
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
+		return
+	}
+	var tkn struct {
+		Token authPkg.JwtToken `json:"token"`
+	}
+	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	if err != nil {
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
+		return
+	}
+
+	h.render(w, tkn)
+}
+///-------
 
 // func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
 // 	u, ok := md.UserFromContext(r.Context())
@@ -96,7 +97,6 @@ func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("ger all request succeeded")
 	h.render(w, users)
 }
 
