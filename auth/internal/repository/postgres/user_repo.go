@@ -24,8 +24,8 @@ type Repository struct {
 }
 
 func (r *Repository) Update(ctx context.Context, u *entity.User) error {
-	query := `UPDATE users SET  name=$2, email=$3, password_hash=$4 WHERE id=$1`
-	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Name, &u.Email, &u.PasswordHash)
+	query := `UPDATE users SET email=$2, password_hash=$3 WHERE id=$1`
+	res, err := r.storage.ExecContext(ctx, query, &u.ID, &u.Email, &u.PasswordHash)
 	if err != nil {
 		return fmt.Errorf("update error: %w", err)
 	}
@@ -43,10 +43,10 @@ func (r *Repository) Update(ctx context.Context, u *entity.User) error {
 }
 
 func (r *Repository) GetByID(ctx context.Context, id string) (entity.User, error) {
-	query := `SELECT name, email, role, password_hash FROM users WHERE id = $1`
+	query := `SELECT email, role, password_hash FROM users WHERE id = $1`
 	u := entity.User{}
 	u.ID = id
-	err := r.storage.QueryRowContext(ctx, query, id).Scan(&u.Name, &u.Email, &u.PermissionRole, &u.PasswordHash)
+	err := r.storage.QueryRowContext(ctx, query, id).Scan(&u.Email, &u.PermissionRole, &u.PasswordHash)
 	if err != nil {
 		return entity.User{}, fmt.Errorf("there is no users with %s id", id)
 	}
@@ -54,10 +54,10 @@ func (r *Repository) GetByID(ctx context.Context, id string) (entity.User, error
 }
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User, error) {
-	query := `SELECT id, name, role, password_hash FROM users WHERE email = $1`
+	query := `SELECT id, role, password_hash FROM users WHERE email = $1`
 	u := entity.User{}
 	u.Email = email
-	err := r.storage.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Name, &u.PermissionRole, &u.PasswordHash)
+	err := r.storage.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.PermissionRole, &u.PasswordHash)
 	if err != nil {
 		return entity.User{}, fmt.Errorf("there is no users with %s id", email)
 	}

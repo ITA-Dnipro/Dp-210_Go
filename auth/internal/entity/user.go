@@ -2,8 +2,8 @@ package entity
 
 // User struct (Model)
 type User struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
+	ID string `json:"id"`
+	//Name           string `json:"name"`
 	Email          string `json:"email"`
 	PermissionRole Role   `json:"roles"`
 	PasswordHash   []byte `json:"-"`
@@ -13,12 +13,6 @@ type User struct {
 type UserLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-type PasswordsRequest struct {
-	UserID          string `json:"id"`
-	Password        string `json:"usecase"`
-	PasswordConfirm string `json:"password_confirm"`
 }
 
 type UserNewPassword struct {
