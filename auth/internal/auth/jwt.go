@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -148,11 +148,11 @@ func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
 
 type AuthClaims struct {
 	UserId   string
-	UserRole role.Role
+	UserRole entity.Role
 	jwt.StandardClaims
 }
 
 type UserAuth struct {
 	Id   string
-	Role role.Role
+	Role entity.Role
 }

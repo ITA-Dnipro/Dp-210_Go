@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"context"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	"net/http"
 	"time"
 
@@ -13,9 +15,14 @@ type UserUsecases interface {
 	GetRoleByID(ctx context.Context, id string) (role.Role, error)
 }
 
+type Auth interface {
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+}
+
 type Middleware struct {
 	Logger *zap.Logger
-	//UserUC UserUsecases
+	UserUC UserUsecases
+	Auth   Auth
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
@@ -32,12 +39,12 @@ func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) RoleOnly(roles ...role.Role) func(next http.Handler) http.Handler {
+func (m *Middleware) RoleOnly(roles ...entity.Role) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			u, ok := UserFromContext(ctx)
-			if ok && role.IsAllowedRole(u.Role, roles) {
+			if ok && entity.IsAllowedRole(u.Role, roles) {
 				next.ServeHTTP(w, r)
 				return
 			}

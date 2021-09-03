@@ -1,4 +1,4 @@
-package password
+package handlers
 
 import (
 	"context"
@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware"
-	authPkg "github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
+
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
 type Auth interface {
-	CreateToken(user authPkg.UserAuth) (authPkg.JwtToken, error)
+	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
 	InvalidateToken(userId string) error
 }
 
@@ -34,12 +36,12 @@ func NewHandler(paswCases PasswordUsecases, logger *zap.Logger, auth Auth) *Hand
 type PasswordUsecases interface {
 	SendRestorePasswordCode(ctx context.Context, email string) (code string, err error)
 	Authenticate(ctx context.Context, pc entity.PasswordCode) (entity.User, error)
+	Auth(ctx context.Context, email, password string) (u entity.User, err error)
 	DeleteCode(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, passw entity.UserNewPassword) error
 	SetNewPassword(ctx context.Context, password string, user *entity.User) error
 }
 
-// GetToken by basic auth.
 func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 	var newUser entity.NewUser
 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
@@ -50,20 +52,20 @@ func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
 		return
 	}
-	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
+	user, err := h.paswCases.Auth(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or usecase was incorrect", w)
 		return
 	}
 	var tkn struct {
-		Token authPkg.JwtToken `json:"token"`
+		Token auth.JwtToken `json:"token"`
 	}
-	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	tkn.Token, err = h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, err.Error(), w)
+		h.writeErrorResponse(http.StatusUnauthorized, "the email or usecase was incorrect", w)
 		return
 	}
-	h.logger.Info("ger all request succeeded")
+
 	h.render(w, tkn)
 }
 
@@ -118,7 +120,7 @@ func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tk, err := h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
+	tk, err := h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, "request failed", w)
 		return
@@ -134,7 +136,7 @@ func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, ok := middleware.UserFromContext(r.Context())
+	u, ok := md.UserFromContext(r.Context())
 	if !ok {
 		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
 		return
@@ -147,15 +149,22 @@ func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Password != req.PasswordConfirm {
-		h.writeErrorResponse(http.StatusBadRequest, "new password and new password confirm do not match", w)
+		h.writeErrorResponse(http.StatusBadRequest, "new usecase and new usecase confirm do not match", w)
 		return
 	}
 
 	if err := h.paswCases.ChangePassword(r.Context(), req); err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "wrong password", w)
+		h.writeErrorResponse(http.StatusForbidden, "wrong usecase", w)
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func isRequestValid(nu interface{}) bool {
+	validate := validator.New()
+	err := validate.Struct(nu)
+	fmt.Println(err)
+	return err == nil
 }
 
 // Message represent error message.

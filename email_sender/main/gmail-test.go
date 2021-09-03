@@ -1,13 +1,12 @@
 package main
 
 import (
+	"github.com/ITA-Dnipro/Dp-210_Go/email_sender"
 	"log"
-
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
 )
 
 func main() {
-	ges, err := mail.NewGmailEmailSender("config.json", "token.json")
+	ges, err := email_sender.NewGmailEmailSender("config.json", "token.json")
 	if err != nil {
 		log.Fatal(err)
 	}

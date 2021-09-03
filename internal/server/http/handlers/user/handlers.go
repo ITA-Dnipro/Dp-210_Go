@@ -22,13 +22,8 @@ type UsersUsecases interface {
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (u entity.User, err error)
+	//Authenticate(ctx context.Context, email, usecase string) (u entity.User, err error)
 }
-
-// type Auth interface {
-// 	CreateToken(user authPkg.UserAuth) (authPkg.JwtToken, error)
-// 	InvalidateToken(userId string) error
-// }
 
 const idKey = "id"
 
@@ -36,58 +31,12 @@ const idKey = "id"
 type Handlers struct {
 	userCases UsersUsecases
 	logger    *zap.Logger
-	// auth      Auth
 }
 
 // NewHandlers create new user handlers.
 func NewHandlers(uc UsersUsecases, log *zap.Logger) *Handlers {
 	return &Handlers{userCases: uc, logger: log}
 }
-
-//copy it out
-func (h *Handlers) GetToken(w http.ResponseWriter, r *http.Request) {
-	var newUser entity.NewUser
-	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
-		return
-	}
-	if ok := isRequestValid(&newUser); !ok {
-		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
-		return
-	}
-	user, err := h.userCases.Authenticate(r.Context(), newUser.Email, newUser.Password)
-	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
-		return
-	}
-	var tkn struct {
-		Token authPkg.JwtToken `json:"token"`
-	}
-	tkn.Token, err = h.auth.CreateToken(authPkg.UserAuth{Id: user.ID, Role: user.PermissionRole})
-	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, "the email or password was incorrect", w)
-		return
-	}
-
-	h.render(w, tkn)
-}
-///-------
-
-// func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
-// 	u, ok := md.UserFromContext(r.Context())
-// 	if !ok {
-// 		h.writeErrorResponse(http.StatusUnauthorized, "no such session", w)
-// 		return
-// 	}
-
-// 	if err := h.auth.InvalidateToken(u.Id); err != nil {
-// 		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", u.Id, err))
-// 		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
-// 		return
-// 	}
-
-// 	w.WriteHeader(http.StatusOK)
-// }
 
 // GetUsers Get all users.
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {

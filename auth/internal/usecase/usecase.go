@@ -1,10 +1,11 @@
-package password
+package usecase
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -96,13 +97,13 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (e
 func (uc *Usecases) SetNewPassword(ctx context.Context, password string, user *entity.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("set new password: %w", err)
+		return fmt.Errorf("set new usecase: %w", err)
 	}
 
 	user.PasswordHash = hash
 	err = uc.userRepo.Update(ctx, user)
 	if err != nil {
-		return fmt.Errorf("set new password: %w", err)
+		return fmt.Errorf("set new usecase: %w", err)
 	}
 
 	return nil
@@ -116,20 +117,20 @@ func (uc *Usecases) ChangePassword(ctx context.Context, passw entity.UserNewPass
 
 	u, err := uc.userRepo.GetByID(ctx, passw.UserID)
 	if err != nil {
-		return fmt.Errorf("change password userId: %v, %w", passw.UserID, err)
+		return fmt.Errorf("change usecase userId: %v, %w", passw.UserID, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(passw.OldPassword)); err != nil {
-		return fmt.Errorf("wrong password")
+		return fmt.Errorf("wrong usecase")
 	}
 
 	u.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(passw.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("generate password hash:%w", err)
+		return fmt.Errorf("generate usecase hash:%w", err)
 	}
 
 	if err := uc.userRepo.Update(ctx, &u); err != nil {
-		return fmt.Errorf("change password: %w", err)
+		return fmt.Errorf("change usecase: %w", err)
 	}
 
 	return nil

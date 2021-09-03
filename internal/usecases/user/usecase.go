@@ -37,7 +37,7 @@ type Usecases struct {
 func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("generate password hash:%w", err)
+		return "", fmt.Errorf("generate usecase hash:%w", err)
 	}
 
 	id := uuid.New().String()
@@ -56,7 +56,7 @@ func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, erro
 func (uc *Usecases) Update(ctx context.Context, nu entity.NewUser) (entity.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("generate password hash:%w", err)
+		return entity.User{}, fmt.Errorf("generate usecase hash:%w", err)
 	}
 	u := entity.User{
 		ID:           nu.ID,
@@ -91,13 +91,13 @@ func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 	return uc.repo.GetAll(ctx)
 }
 
-// // Authenticate user by email and password.
-// func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
+// // Authenticate user by email and usecase.
+// func (uc *Usecases) Authenticate(ctx context.Context, email, usecase string) (u entity.User, err error) {
 // 	u, err = uc.repo.GetByEmail(ctx, email)
 // 	if err != nil {
 // 		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
 // 	}
-// 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
+// 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(usecase)); err != nil {
 // 		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
 // 	}
 

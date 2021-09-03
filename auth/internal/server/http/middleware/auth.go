@@ -2,19 +2,13 @@ package middleware
 
 import (
 	"context"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	"net/http"
 	"strings"
-
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
 )
 
 type contextKey string
-type JwtToken string
-
-type User struct {
-	Id   string
-	Role role.Role
-}
 
 var (
 	KeyUser = contextKey("user")
@@ -23,19 +17,18 @@ var (
 func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t, ok := tokenfromRequest(r)
-		_ = t
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Malformed Token"))
 			return
 		}
 
-		user := User{"", role.Admin} //, err := md.Auth.ValidateToken(t)
-		//if err != nil {
-		//	w.WriteHeader(http.StatusUnauthorized)
-		//	w.Write([]byte("Unauthorized"))
-		//	return
-		//}
+		user, err := md.Auth.ValidateToken(t)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		}
 
 		ctx := contextWithUser(r.Context(), ReqUser{Id: user.Id, Role: user.Role})
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -51,17 +44,17 @@ func UserFromContext(ctx context.Context) (user ReqUser, ok bool) {
 	return user, ok
 }
 
-func tokenfromRequest(r *http.Request) (JwtToken, bool) {
+func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
 	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
 	if len(authHeader) != 2 {
-		return "", false
+		return auth.JwtToken(""), false
 	}
 
-	jwtToken := JwtToken(authHeader[1])
+	jwtToken := auth.JwtToken(authHeader[1])
 	return jwtToken, true
 }
 
 type ReqUser struct {
 	Id   string
-	Role role.Role
+	Role entity.Role
 }
