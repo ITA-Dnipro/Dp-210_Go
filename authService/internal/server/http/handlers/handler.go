@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 	"go.uber.org/zap"
 )
 

@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
 )
 
 type UsersRepository interface {

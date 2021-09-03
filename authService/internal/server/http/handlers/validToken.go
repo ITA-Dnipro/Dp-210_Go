@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 	"net/http"
 )
 

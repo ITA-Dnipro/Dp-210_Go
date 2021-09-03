@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"time"
 
-	cache "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/cache/redis"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
+	cache "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/cache/redis"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/repository/postgres"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/handlers"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/handlers"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/middleware"
 	mail "github.com/ITA-Dnipro/Dp-210_Go/email_sender"
 
 	"github.com/go-chi/chi"

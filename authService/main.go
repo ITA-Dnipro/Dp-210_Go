@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/repository/postgres"
-	router "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
+	router "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http"
 	"github.com/ITA-Dnipro/Dp-210_Go/email_sender"
 
 	"github.com/go-redis/redis/v8"

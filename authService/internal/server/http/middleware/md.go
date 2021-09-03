@@ -2,16 +2,17 @@ package middleware
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"net/http"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
+
 	"go.uber.org/zap"
 )
 
 type UserUsecases interface {
-	GetRoleByID(ctx context.Context, id string) (role.Role, error)
+	GetRoleByID(ctx context.Context, id string) (entity.Role, error)
 }
 
 type Auth interface {
