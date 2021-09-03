@@ -19,6 +19,24 @@ services:
     networks:
       - fullstack
 
+  auth:
+    container_name: dp210go_auth
+    image: dp210go_auth
+    working_dir: /app
+    command: ./dp210goapp
+    links:
+      - redis
+    env_file:
+      - ./env/db.env
+      - ./env/webapp.env
+    ports:
+      - "127.0.0.1:8000:8001"
+    depends_on:
+      - redis
+      - db
+    networks:
+      - fullstack
+
   redis:
     container_name: dp210go_redisctr
     image: redis:latest
