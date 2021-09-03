@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/role"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // UsersRepository represent user repository.
 type UsersRepository interface {
-	Create(ctx context.Context, u entity.User) error
+	Create(ctx context.Context, u *entity.User) error
 	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetAll(ctx context.Context) ([]entity.User, error)
@@ -34,37 +33,20 @@ type Usecases struct {
 }
 
 // Create Add new user
-func (uc *Usecases) Create(ctx context.Context, nu entity.NewUser) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
+func (uc *Usecases) Create(ctx context.Context, u *entity.User) error {
+	hash, err := bcrypt.GenerateFromPassword(u.PasswordHash, bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("generate password hash:%w", err)
+		return fmt.Errorf("generate password hash:%w", err)
 	}
-
-	id := uuid.New().String()
-
-	u := entity.User{
-		ID:             id,
-		Name:           nu.Name,
-		Email:          nu.Email,
-		PermissionRole: role.Viewer,
-		PasswordHash:   hash,
-	}
-	return id, uc.repo.Create(ctx, u)
+	u.ID = uuid.New().String()
+	u.PermissionRole = role.Viewer
+	u.PasswordHash = hash
+	return uc.repo.Create(ctx, u)
 }
 
 // Update updates a user
-func (uc *Usecases) Update(ctx context.Context, nu entity.NewUser) (entity.User, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(nu.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return entity.User{}, fmt.Errorf("generate password hash:%w", err)
-	}
-	u := entity.User{
-		ID:           nu.ID,
-		Name:         nu.Name,
-		Email:        nu.Email,
-		PasswordHash: hash,
-	}
-	return u, uc.repo.Update(ctx, &u)
+func (uc *Usecases) Update(ctx context.Context, u *entity.User) error {
+	return uc.repo.Update(ctx, u)
 }
 
 // Delete deletes a user from storage
@@ -89,17 +71,4 @@ func (uc *Usecases) GetRoleByID(ctx context.Context, id string) (role.Role, erro
 // GetAll get all users.
 func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 	return uc.repo.GetAll(ctx)
-}
-
-// Authenticate user by email and password.
-func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
-	u, err = uc.repo.GetByEmail(ctx, email)
-	if err != nil {
-		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
-	}
-	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
-		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
-	}
-
-	return u, nil
 }

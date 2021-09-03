@@ -1,91 +1,57 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/config"
-	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/redis"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres"
-	router "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/sender/mail"
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/repository/postgres"
+	router "github.com/ITA-Dnipro/Dp-210_Go/user/internal/server/http"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
 )
 
 const (
-	configPath     = "config.json"
-	migrationsPath = "migrations"
+	migrationsPath = "sql/migrations"
 )
 
-// Main function
 func main() {
-	log.Println("Starting webapp dp210go")
+	zapLogger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal("building logger", err)
+	}
+	if err := run(zapLogger); err != nil {
+		zapLogger.Error("user: error:", zap.Error(err))
+		os.Exit(1)
+	}
+}
 
-	var env config.Env
-	err := cleanenv.ReadEnv(&env)
+func run(logger *zap.Logger) error {
+	var cfg config.Config
+	err := cleanenv.ReadEnv(&cfg)
 	if err != nil {
 		log.Fatal(fmt.Errorf("read env: %w", err))
 	}
-
-	var cfg config.Config
-	err = cleanenv.ReadConfig(configPath, &cfg)
+	logger.Info("user: Initializing database support")
+	db, err := postgres.Open(cfg.Postgres)
 	if err != nil {
-		log.Fatal(fmt.Errorf("read config: %w", err))
+		return fmt.Errorf("connecting to db: %w", err)
 	}
-
-	logger, _ := zap.NewProduction()
-
-	gmail, err := mail.NewGmailEmailSender("config.json", "token.json")
-	if err != nil {
-		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
-	}
-
-	db, err := sql.Open("pgx", env.DatabaseStr())
-	if err != nil {
-		log.Fatal(fmt.Errorf("creating db: %w", err))
-	}
-
-	err = db.Ping()
-	if err != nil {
-		if err = db.Close(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-		}
-		log.Fatal(fmt.Errorf("ping db %s : %w", env.DatabaseStr(), err))
-	}
-
-	err = postgres.MigrateUp(migrationsPath, env.DatabaseStr())
+	defer func() {
+		log.Printf("user: Database Stopping")
+		db.Close()
+	}()
+	err = postgres.MigrateUp(migrationsPath, cfg.Postgres)
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
+		return fmt.Errorf("migrations db: %w", err)
 	}
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     env.RedisUrl,
-		Password: env.RedisPassword,
-		DB:       0,
-	})
-
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		log.Fatal(fmt.Errorf("connect to redis server: %w", err))
-	}
-
-	tokenExp := 15 * time.Minute
-	jwtAuth, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, tokenExp, "jwtToken"), tokenExp)
-	if err != nil {
-		log.Fatal(fmt.Errorf("jwt auth: %w", err))
-	}
-
-	r := router.NewRouter(db, logger, gmail, jwtAuth, rdb)
+	r := router.NewRouter(db, logger)
 	// Start server
-	log.Println("Initialized successfully")
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r))
+	logger.Info("user: Initializing API support", zap.String("host", cfg.APIHost))
+	return http.ListenAndServe(cfg.APIHost, r)
 }
