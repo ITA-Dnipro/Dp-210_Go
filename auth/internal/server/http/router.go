@@ -18,13 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type Auth interface {
-	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
-	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
-	InvalidateToken(userId string) error
-}
-
-// NewRouter create http routes.
 func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client) (chi.Router, error) {
 	repo := postgres.NewRepository(db)
 	expire := time.Minute * 15
@@ -55,10 +48,10 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 			r.Post("/logout", hs.LogOut)
 		})
 
-		r.Route("/usecase", func(r chi.Router) {
+		r.Route("/password", func(r chi.Router) {
 			r.Route("/restore", func(r chi.Router) {
-				r.Post("/code/send", hs.SendRestorePasswordCode)
-				r.Post("/code/check", hs.RestorePassword)
+				r.Post("/", hs.RestorePassword)
+				r.Post("/code", hs.SendRestorePasswordCode)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -67,5 +60,6 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 			})
 		})
 	})
+
 	return r, nil
 }

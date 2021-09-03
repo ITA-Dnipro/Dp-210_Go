@@ -9,13 +9,10 @@ type User struct {
 	PasswordHash   []byte `json:"-"`
 }
 
-// NewUser represent new user in request.
-type NewUser struct {
-	ID              string `json:"id" validate:"omitempty"`
-	Name            string `json:"name,omitempty" validate:"omitempty"`
-	Email           string `json:"email" validate:"required,email"`
-	Password        string `json:"usecase" validate:"required"`
-	PasswordConfirm string `json:"password_confirm" validate:"omitempty,eqfield=Password"`
+// UserLogin represent new user in request.
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type PasswordsRequest struct {

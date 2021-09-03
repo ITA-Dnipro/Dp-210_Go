@@ -10,7 +10,6 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
@@ -43,26 +42,24 @@ type PasswordUsecases interface {
 }
 
 func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
-	var newUser entity.NewUser
+	var newUser entity.UserLogin
 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "can't parse a user", w)
+		h.writeErrorResponse(http.StatusBadRequest, invalidRequestFormat, w)
 		return
 	}
-	if ok := isRequestValid(&newUser); !ok {
-		h.writeErrorResponse(http.StatusBadRequest, "user data invalid", w)
-		return
-	}
+
 	user, err := h.paswCases.Auth(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, "the email or usecase was incorrect", w)
+		h.writeErrorResponse(http.StatusUnauthorized, incorrectEmailOrPassword, w)
 		return
 	}
+
 	var tkn struct {
 		Token auth.JwtToken `json:"token"`
 	}
 	tkn.Token, err = h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
-		h.writeErrorResponse(http.StatusUnauthorized, "the email or usecase was incorrect", w)
+		h.writeErrorResponse(http.StatusUnauthorized, incorrectEmailOrPassword, w)
 		return
 	}
 
@@ -78,7 +75,7 @@ func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.auth.InvalidateToken(u.Id); err != nil {
 		h.logger.Warn(fmt.Sprintf("log out: user %v; err: %v", u.Id, err))
-		h.writeErrorResponse(http.StatusInternalServerError, "could not log out", w)
+		h.writeErrorResponse(http.StatusInternalServerError, requestFailed, w)
 		return
 	}
 
@@ -88,12 +85,12 @@ func (h *Handlers) LogOut(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordRestoreReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "wrong request format", w)
+		h.writeErrorResponse(http.StatusBadRequest, invalidRequestFormat, w)
 		return
 	}
 
 	if _, err := h.paswCases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
-		h.writeErrorResponse(http.StatusAccepted, "your request failed", w)
+		h.writeErrorResponse(http.StatusAccepted, requestFailed, w)
 		return
 	}
 
@@ -103,26 +100,26 @@ func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Reques
 func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 	var req entity.PasswordCode
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "wrong data format", w)
+		h.writeErrorResponse(http.StatusBadRequest, invalidRequestFormat, w)
 		return
 	}
 
 	user, err := h.paswCases.Authenticate(r.Context(), req)
 	if err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "authorization code is wrong", w)
+		h.writeErrorResponse(http.StatusForbidden, incorrectEmailOrAuthCode, w)
 		return
 	}
 
 	defer h.paswCases.DeleteCode(r.Context(), req.Email)
 
 	if err = h.paswCases.SetNewPassword(r.Context(), req.NewPassword, &user); err != nil {
-		h.writeErrorResponse(http.StatusInternalServerError, "request failed", w)
+		h.writeErrorResponse(http.StatusInternalServerError, requestFailed, w)
 		return
 	}
 
 	tk, err := h.auth.CreateToken(auth.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
-		h.writeErrorResponse(http.StatusInternalServerError, "request failed", w)
+		h.writeErrorResponse(http.StatusInternalServerError, requestFailed, w)
 		return
 	}
 
@@ -132,39 +129,32 @@ func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var req entity.UserNewPassword
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.writeErrorResponse(http.StatusBadRequest, "could not parse request", w)
+		h.writeErrorResponse(http.StatusBadRequest, invalidRequestFormat, w)
 		return
 	}
 
 	u, ok := md.UserFromContext(r.Context())
 	if !ok {
-		h.writeErrorResponse(http.StatusUnauthorized, "auth error", w)
+		h.writeErrorResponse(http.StatusUnauthorized, requestFailed, w)
 		return
 	}
 	req.UserID = u.Id
 
 	if req.Password == "" {
-		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criterium", w)
+		h.writeErrorResponse(http.StatusBadRequest, "request does not meet needed criteria", w)
 		return
 	}
 
 	if req.Password != req.PasswordConfirm {
-		h.writeErrorResponse(http.StatusBadRequest, "new usecase and new usecase confirm do not match", w)
+		h.writeErrorResponse(http.StatusBadRequest, "new password and new password confirm confirm do not match", w)
 		return
 	}
 
 	if err := h.paswCases.ChangePassword(r.Context(), req); err != nil {
-		h.writeErrorResponse(http.StatusForbidden, "wrong usecase", w)
+		h.writeErrorResponse(http.StatusForbidden, "wrong password", w)
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func isRequestValid(nu interface{}) bool {
-	validate := validator.New()
-	err := validate.Struct(nu)
-	fmt.Println(err)
-	return err == nil
 }
 
 // Message represent error message.
