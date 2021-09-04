@@ -57,3 +57,5 @@ cmake-build-*/
 .idea/**/dbnavigator.xml
 
 bin
+
+data/
