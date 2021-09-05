@@ -64,8 +64,29 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/login", hs.GetToken)   // POST /api/v1/login
-		r.Post("/users", hs.CreateUser) // POST /api/v1/users
+		r.Post("/login", hs.GetToken) // POST /api/v1/login
+
+		r.Group(func(r chi.Router) {
+			r.Use(md.AuthMiddleware)
+			r.Post("/logout", hs.LogOut)
+		})
+
+		r.Route("/password", func(r chi.Router) {
+			r.Route("/restore", func(r chi.Router) {
+				r.Post("/code/send", paswHandler.SendRestorePasswordCode)
+				r.Post("/", paswHandler.RestorePassword)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(md.AuthMiddleware)
+				r.Post("/change", paswHandler.ChangePassword)
+			})
+		})
+
+		r.Post("/users", hs.CreateUser)       // POST /api/v1/users
+		r.Get("/doctors", hsD.GetDoctors)     // GET    /api/v1/doctors
+		r.Get("/doctors/{id}", hsD.GetDoctor) // GET /api/v1/doctors/<id>
+
 		r.Route("/patient", func(r chi.Router) {
 			r.Post("/card", func(w http.ResponseWriter, r *http.Request) {
 				records := make([]string, 0)
@@ -95,6 +116,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 				patientCard.SendToDb()
 			})
 		})
+
 		r.Route("/", func(r chi.Router) { // route with permissions
 			r.Use(md.AuthMiddleware)
 
@@ -104,7 +126,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 				r.Get("/users", hs.GetUsers)     // GET /api/v1/users
 				r.Get("/users/{id}", hs.GetUser) // GET /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
 
-				r.Post("/doctors", hsD.CreateDoctor) 		// POST	/api/v1/doctors
+				r.Post("/doctors", hsD.CreateDoctor) // POST	/api/v1/doctors
 			})
 			r.Group(func(r chi.Router) { // route with permission Admin.
 				r.Use(md.RoleOnly(role.Admin))
