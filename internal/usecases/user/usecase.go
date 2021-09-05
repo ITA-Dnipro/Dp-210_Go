@@ -6,6 +6,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -91,14 +92,14 @@ func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
 }
 
 // Authenticate user by email and password.
-func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (id string, err error) {
-	u, err := uc.repo.GetByEmail(ctx, email)
+func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (u entity.User, err error) {
+	u, err = uc.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("authenticate get user by email:%w", err)
+		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
 	}
 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
-		return "", fmt.Errorf("authentication failed:%w", err)
+		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
 	}
 
-	return u.ID, nil
+	return u, nil
 }
