@@ -2,10 +2,11 @@ package middleware
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 	"net/http"
 	"strings"
+
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 )
 
 type contextKey string

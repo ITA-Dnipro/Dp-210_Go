@@ -32,3 +32,4 @@ logsredis:
 # Поднять все с созданием образа для сервиса приложения.
 upall:buildimg
 	docker-compose up -d
+

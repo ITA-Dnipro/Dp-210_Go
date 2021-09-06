@@ -10,8 +10,8 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/sender"
 	router "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http"
-	"github.com/ITA-Dnipro/Dp-210_Go/email_sender"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -41,7 +41,7 @@ func main() {
 
 	logger, _ := zap.NewProduction()
 
-	gmail, err := email_sender.NewGmailEmailSender("config.json", "token.json")
+	gmail, err := sender.NewGmailEmailSender("config.json", "token.json")
 	if err != nil {
 		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
 	}

@@ -3,7 +3,6 @@ module github.com/ITA-Dnipro/Dp-210_Go/authService
 go 1.17
 
 require (
-	github.com/ITA-Dnipro/Dp-210_Go v0.0.0-20210727144424-47d520c0bc0c
 	github.com/go-chi/chi v1.5.4
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -53,4 +52,3 @@ require (
 	olympos.io/encoding/edn v0.0.0-20200308123125-93e3b8dd0e24 // indirect
 )
 
-replace github.com/ITA-Dnipro/Dp-210_Go => ../../Dp-210_Go

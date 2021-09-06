@@ -4,12 +4,8 @@ RUN mkdir /app
 WORKDIR /app
 RUN mkdir ./bin
 COPY ./ ./
-COPY --from=dp210goimg /app /app/dp210go
-RUN go mod edit -replace github.com/ITA-Dnipro/Dp-210_Go=/app/dp210go
 RUN go build -o ./bin/dp210goapp/authService ./
-
-
-RUN go build -o ./bin/dp210goapp ./
+#RUN go build -o ./bin/dp210goapp ./
 
 # Production image.
 FROM ubuntu:latest

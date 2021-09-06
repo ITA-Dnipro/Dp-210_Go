@@ -8,9 +8,9 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
+	mail "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/sender"
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/handlers"
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/middleware"
-	mail "github.com/ITA-Dnipro/Dp-210_Go/email_sender"
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"

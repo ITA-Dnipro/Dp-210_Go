@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 	"net/http"
+
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
 )
 
 type UserToken struct {
