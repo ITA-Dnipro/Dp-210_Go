@@ -23,7 +23,10 @@ type Config struct {
 	HttpPort string `env:"HTTP_PORT" env-default:"8000"`
 	GrpcPort string `env:"GRPC_PORT" env-default:"8001"`
 
-	TokenExpirationMillis int64 `env:"token_expiration_millis" env-default:"900000"`
+	TokenExpirationMillis       int64  `json:"token_expiration_millis" env-default:"900000"`
+	TokenType                   string `json:"token_type" env-default:"jwtToken"`
+	RestoreCodeExpirationMillis int64  `json:"restore_code_expiration_millis" env-default:"300000"`
+	RestoreCodeType             string `json:"restore_code_type" env-default:"restore"`
 }
 
 func (e *Config) DatabaseUrl() (*url.URL, error) {

@@ -2,6 +2,7 @@ package http
 
 import (
 	"database/sql"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
 	"time"
 
 	cache "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/cache/redis"
@@ -29,11 +30,14 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 
 	md := &middleware.Middleware{Logger: logger}
 
+	cfg := config.GetConfig()
+	exp := time.Duration(cfg.RestoreCodeExpirationMillis) * time.Millisecond
+
 	paswCase := usecase.NewUsecases(
 		mailSender,
 		usecase.SixDigitGenerator{},
 		repo,
-		cache.NewRestoreCodeCache(rdb, time.Minute*5, "restore"),
+		cache.NewRestoreCodeCache(rdb, exp, cfg.RestoreCodeType),
 	)
 
 	hs := handlers.NewHandler(paswCase, logger, auth)

@@ -84,7 +84,7 @@ func main() {
 	}
 
 	expire := time.Duration(cfg.TokenExpirationMillis) * time.Millisecond
-	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
+	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, cfg.TokenType), expire)
 	if err != nil {
 		log.Fatal(fmt.Errorf("initialize auth: %w", err))
 	}

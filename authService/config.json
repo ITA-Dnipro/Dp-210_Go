@@ -1,5 +1,8 @@
 {
     "token_expiration_millis" : "900000",
+    "token_type" : "jwtToken",
+    "restore_code_expiration_millis" : "300000",
+    "restore_code_type" : "restore",
     
     "web":{
         "gmail" : "dont touch it, it is gmail oauth credentials",
