@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+// protoc --go_out=plugins=grpc:. *.proto
+
+package appointmentsService;
+option go_package = ".;appointmentsService";
+
+message Appointment {
+  string AppointmentID = 1;
+  string DoctorID = 2;
+  string PatientID = 3;
+  string Reason = 4;
+  google.protobuf.Timestamp From = 5;
+  google.protobuf.Timestamp To = 6;
+}
+
+message Empty {}
+
+message GetByIDReq {
+  string UserID = 1;
+  google.protobuf.Timestamp From = 2;
+  google.protobuf.Timestamp To = 3;
+}
+
+message GetByIDRes { repeated Appointment Appointment = 1; }
+
+service UsersService {
+  rpc GetByID(GetByIDReq) returns (GetByIDRes) {}
+}
