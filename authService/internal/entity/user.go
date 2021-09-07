@@ -1,5 +1,7 @@
 package entity
 
+type Role string
+
 type User struct {
 	ID             string `json:"id"`
 	Email          string `json:"email"`
