@@ -3,7 +3,11 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"sync"
 )
+
+var conf Config
+var mu sync.Mutex
 
 type Config struct {
 	DbUser     string `env:"DB_USER" env-default:"postgres"`
@@ -16,8 +20,10 @@ type Config struct {
 	RedisUrl      string `env:"REDIS_URL" env-default:"localhost:6379"`
 	RedisPassword string `env:"REDIS_PASSWORD" env-default:""`
 
-	AppHost string `env:"APP_HOST" env-default:"localhost"`
-	AppPort string `env:"APP_PORT" env-default:"8000"`
+	HttpPort string `env:"HTTP_PORT" env-default:"8000"`
+	GrpcPort string `env:"GRPC_PORT" env-default:"8001"`
+
+	TokenExpirationMillis int64 `env:"token_expiration_millis" env-default:"900000"`
 }
 
 func (e *Config) DatabaseUrl() (*url.URL, error) {
@@ -27,4 +33,14 @@ func (e *Config) DatabaseUrl() (*url.URL, error) {
 func (e *Config) DatabaseStr() string {
 	return fmt.Sprintf("postgres://%v:%v@%v:%v/%v?%v", e.DbUser, e.DbPassword, e.DbHost, e.DbPort, e.DbName, e.DbParams)
 
+}
+
+func GetConfig() Config {
+	return conf
+}
+
+func SetConfig(cfg Config) {
+	mu.Lock()
+	conf = cfg
+	mu.Unlock()
 }

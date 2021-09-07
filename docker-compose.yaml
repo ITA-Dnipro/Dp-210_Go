@@ -27,8 +27,7 @@ services:
     links:
       - redis
     env_file:
-      - ./env/db.env
-      - ./env/webapp.env
+      - ./authService/config.env
     ports:
       - "127.0.0.1:8001:8000"
     depends_on:

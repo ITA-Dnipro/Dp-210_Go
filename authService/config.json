@@ -1,6 +1,5 @@
 {
-    
-
+    "token_expiration_millis" : "900000",
     
     "web":{
         "gmail" : "dont touch it, it is gmail oauth credentials",
@@ -12,5 +11,4 @@
         "client_secret":"jkYI6PAT62Js19WDmkYMH4uc",
         "redirect_uris":["https://www.google.com/","http://localhost:8000"]
     }
-    
 }

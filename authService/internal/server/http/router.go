@@ -17,13 +17,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client) (chi.Router, error) {
+type Auth interface {
+	CreateToken(user usecase.UserAuth) (usecase.JwtToken, error)
+	InvalidateToken(userId string) error
+}
+
+func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client, auth Auth) (chi.Router, error) {
 	repo := postgres.NewRepository(db)
-	expire := time.Minute * 15
-	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
-	if err != nil {
-		return nil, err
-	}
+
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
 	md := &middleware.Middleware{Logger: logger}
@@ -35,7 +36,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 		cache.NewRestoreCodeCache(rdb, time.Minute*5, "restore"),
 	)
 
-	hs := handlers.NewHandler(paswCase, logger, jwt)
+	hs := handlers.NewHandler(paswCase, logger, auth)
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)

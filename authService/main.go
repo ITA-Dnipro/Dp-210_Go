@@ -33,28 +33,29 @@ const (
 )
 
 func main() {
-	log.Println("Starting webapp dp210go")
-
-	var env config.Config
-	err := cleanenv.ReadEnv(&env)
-	if err != nil {
-		log.Fatal(fmt.Errorf("read env: %w", err))
-	}
+	log.Println("Starting authentication microservice")
 
 	var cfg config.Config
-	err = cleanenv.ReadConfig(configPath, &cfg)
+	err := cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
 		log.Fatal(fmt.Errorf("read config: %w", err))
 	}
 
+	err = cleanenv.ReadEnv(&cfg)
+	if err != nil {
+		log.Fatal(fmt.Errorf("read env: %w", err))
+	}
+
+	config.SetConfig(cfg)
+
 	logger, _ := zap.NewProduction()
 
-	gmail, err := sender.NewGmailEmailSender("config.json", "token.json")
+	gmail, err := sender.NewGmailEmailSender(configPath, "token.json")
 	if err != nil {
 		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
 	}
 
-	db, err := sql.Open("pgx", env.DatabaseStr())
+	db, err := sql.Open("pgx", cfg.DatabaseStr())
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
@@ -64,17 +65,17 @@ func main() {
 		if err = db.Close(); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		}
-		log.Fatal(fmt.Errorf("ping db %s : %w", env.DatabaseStr(), err))
+		log.Fatal(fmt.Errorf("ping db %s : %w", cfg.DatabaseStr(), err))
 	}
 
-	err = postgres.MigrateUp(migrationsPath, env.DatabaseStr())
+	err = postgres.MigrateUp(migrationsPath, cfg.DatabaseStr())
 	if err != nil {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     env.RedisUrl,
-		Password: env.RedisPassword,
+		Addr:     cfg.RedisUrl,
+		Password: cfg.RedisPassword,
 		DB:       0,
 	})
 
@@ -82,27 +83,30 @@ func main() {
 		log.Fatal(fmt.Errorf("connect to redis server: %w", err))
 	}
 
-	r, err := router.NewRouter(db, logger, gmail, rdb)
+	expire := time.Duration(cfg.TokenExpirationMillis) * time.Millisecond
+	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
+	if err != nil {
+		log.Fatal(fmt.Errorf("initialize auth: %w", err))
+	}
+
+	r, err := router.NewRouter(db, logger, gmail, rdb, jwt)
 	if err != nil {
 		log.Fatal(fmt.Errorf("initialize router: %w", err))
 	}
-	// Start server
+
 	log.Println("Initialized successfully")
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r); err != nil {
-		log.Fatal(err)
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", cfg.HttpPort), r); err != nil {
+		log.Fatalf("failed to listen http: %v", err)
 	}
 
-	lis, err := net.Listen("tcp", string(8081))
+	lis, err := net.Listen("tcp", cfg.GrpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("failed to listen grpc: %v", err)
 	}
 	s := grpc.NewServer()
-	expire := time.Minute * 15
-	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
 
 	proto.RegisterTokenValidatorServer(s, grpcServer.NewGrpcServer(jwt))
-	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
