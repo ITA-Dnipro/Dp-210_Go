@@ -1,21 +1,23 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/proto"
+
+	"google.golang.org/grpc"
 )
 
 type contextKey string
 type JwtToken string
 
 type User struct {
-	Id   string    `userId`
-	Role role.Role `userRole`
+	Id   string    `json:"userId"`
+	Role role.Role `json:"userRole"`
 }
 
 type UserToken struct {
@@ -36,33 +38,28 @@ func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		jsoned, err := json.Marshal(UserToken{Token: t})
+		conn, err := grpc.Dial(config.GetConfig().AuthAddress, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			md.Logger.Warn("could not validate token via grpc")
 			return
 		}
+		defer conn.Close()
+		c := proto.NewTokenValidatorClient(conn)
 
-		resp, err := http.Post(md.AuthUrl, "application/json", bytes.NewReader(jsoned))
+		res, err := c.Validate(r.Context(), &proto.Token{Token: t})
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		defer resp.Body.Close()
 
-		code := resp.StatusCode
-		if code != http.StatusOK {
-			w.WriteHeader(code)
-			w.Write([]byte(resp.Status))
+			md.Logger.Warn("could not validate token via grpc")
 			return
 		}
 
-		var user User
-		if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+		if res.StatusCode != 200 {
+			w.WriteHeader(int(res.StatusCode))
 			return
 		}
 
-		ctx := contextWithUser(r.Context(), ReqUser{Id: user.Id, Role: user.Role})
+		ctx := contextWithUser(r.Context(), ReqUser{Id: res.UserId, Role: role.Role(res.UserRole)})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -76,13 +73,13 @@ func UserFromContext(ctx context.Context) (user ReqUser, ok bool) {
 	return user, ok
 }
 
-func tokenfromRequest(r *http.Request) (JwtToken, bool) {
+func tokenfromRequest(r *http.Request) (string, bool) {
 	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
 	if len(authHeader) != 2 {
 		return "", false
 	}
 
-	jwtToken := JwtToken(authHeader[1])
+	jwtToken := authHeader[1]
 	return jwtToken, true
 }
 

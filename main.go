@@ -34,6 +34,8 @@ func main() {
 		log.Fatal(fmt.Errorf("read config: %w", err))
 	}
 
+	config.SetConfig(cfg)
+
 	logger, _ := zap.NewProduction()
 
 	db, err := sql.Open("pgx", cfg.DatabaseStr())
