@@ -4,14 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	cache "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/cache/redis"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/sender"
 	router "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http"
+
+	grpcServer "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/grpc"
+	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/grpc/proto"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -80,5 +88,22 @@ func main() {
 	}
 	// Start server
 	log.Println("Initialized successfully")
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r))
+
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", env.AppPort), r); err != nil {
+		log.Fatal(err)
+	}
+
+	lis, err := net.Listen("tcp", string(8081))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	expire := time.Minute * 15
+	jwt, err := usecase.NewJwtAuth(cache.NewSessionCache(rdb, expire, "jwtToken"), expire)
+
+	proto.RegisterTokenValidatorServer(s, grpcServer.NewGrpcServer(jwt))
+	log.Printf("server listening at %v", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

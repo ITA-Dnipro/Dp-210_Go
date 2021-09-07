@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/grpc/proto";
+
+package proto;
+
+service TokenValidator {
+  rpc Validate (Token) returns (ValidatedToken) {}
+}
+
+message Token {
+  string token = 1;
+}
+
+message ValidatedToken {
+  int32 statusCode = 1;
+  string userId = 2;
+  string userRole = 3;
+}
