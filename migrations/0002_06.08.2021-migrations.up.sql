@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 INSERT INTO roles (name)
-   VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient')
-   VALUES ('admin'), ('operator'), ('viewer');
+   VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient');
 
 CREATE TABLE IF NOT EXISTS data_from_patients (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
@@ -51,7 +50,7 @@ CREATE TABLE IF NOT EXISTS data_from_patients (
     job_info varchar(150) NOT NULL,
     disability BOOLEAN NOT NULL,
     allergies BOOLEAN NOT NULL,
-    reg_day varchar(10) NOT NULL,
+    reg_date date NOT NULL,
     patient_role INT NOT NULL
 );
 

@@ -1,14 +1,7 @@
 package http
 
 import (
-	"bufio"
 	"database/sql"
-	"encoding/json"
-	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	cache "github.com/ITA-Dnipro/Dp-210_Go/internal/cache/redis"
@@ -26,6 +19,10 @@ import (
 	postgresDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/doctor"
 	handlersDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/doctor"
 	usecasesDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
+
+	postgresPatientData "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/patientdata"
+	handlersPD "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/patientdata"
+	usecasesPD "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/patientdata"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
@@ -61,6 +58,10 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 	usecaseD := usecasesDoctor.NewUsecases(repoD, repo)
 	hsD := handlersDoctor.NewHandlers(usecaseD, logger)
 
+	repoPD := postgresPatientData.NewRepository(db)
+	usecasePD := usecasesPD.NewUsecases(repoPD)
+	hsPD := handlersPD.NewHandlers(usecasePD, logger)
+
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
@@ -88,33 +89,8 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 		r.Get("/doctors/{id}", hsD.GetDoctor) // GET /api/v1/doctors/<id>
 
 		r.Route("/patient", func(r chi.Router) {
-			r.Post("/card", func(w http.ResponseWriter, r *http.Request) {
-				records := make([]string, 0)
-				scanner := bufio.NewScanner(r.Body)
-				for scanner.Scan() {
-					records = append(records, scanner.Text())
-				}
-				if scanner.Err() != nil {
-					fmt.Println(scanner.Err())
-				}
-
-				if len(records) != 7 {
-					_, _ = fmt.Fprintln(os.Stderr, "no data or can't proceed")
-					return
-				}
-
-				patientCard := entity.New(strings.Split(records[5], ";"))
-				patientCard.SendToDb()
-			})
-			r.Post("/info", func(w http.ResponseWriter, r *http.Request) {
-				var patientCard entity.PatientCard
-				if err := json.NewDecoder(r.Body).Decode(&patientCard); err != nil {
-					_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
-					return
-				}
-				patientCard.CorrectData()
-				patientCard.SendToDb()
-			})
+			r.Post("/card", hsPD.CreatePatientDataFromCSV)  // POST /api/v1/patient/card
+			r.Post("/info", hsPD.CreatePatientDataFromJSON) // POST /api/v1/patient/info
 		})
 
 		r.Route("/", func(r chi.Router) { // route with permissions

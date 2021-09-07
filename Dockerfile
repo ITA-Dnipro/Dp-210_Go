@@ -12,4 +12,5 @@ RUN mkdir /app
 RUN mkdir /app/migrations
 COPY ./migrations /app/migrations
 COPY ./config.json /app
+COPY ./token.json /app
 COPY --from=builder /app/bin/dp210goapp /app
