@@ -59,7 +59,7 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User,
 	u.Email = email
 	err := r.storage.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.PermissionRole, &u.PasswordHash)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("there is no users with %s id", email)
+		return entity.User{}, fmt.Errorf("there is no users with %s email: (%w)", email, err)
 	}
 	return u, nil
 }

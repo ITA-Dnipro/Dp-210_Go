@@ -1,7 +1,7 @@
 {
-    "token_expiration_millis" : "900000",
+    "token_expiration_millis" : 900000,
     "token_type" : "jwtToken",
-    "restore_code_expiration_millis" : "300000",
+    "restore_code_expiration_millis" : 300000,
     "restore_code_type" : "restore",
     
     "web":{

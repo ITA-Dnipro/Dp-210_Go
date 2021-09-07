@@ -18,6 +18,7 @@ func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.paswCases.Auth(r.Context(), newUser.Email, newUser.Password)
 	if err != nil {
+		h.logger.Info(fmt.Sprintf("failed login for %v: %v", newUser, err))
 		h.writeErrorResponse(http.StatusUnauthorized, incorrectEmailOrPassword, w)
 		return
 	}
@@ -27,6 +28,7 @@ func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 	}
 	tkn.Token, err = h.auth.CreateToken(usecase.UserAuth{Id: user.ID, Role: user.PermissionRole})
 	if err != nil {
+		h.logger.Info(fmt.Sprintf("failed login for %v: %v", newUser, err))
 		h.writeErrorResponse(http.StatusUnauthorized, incorrectEmailOrPassword, w)
 		return
 	}
