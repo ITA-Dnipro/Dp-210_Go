@@ -10,7 +10,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
@@ -60,11 +59,9 @@ func main() {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
 	}
 
-	err = db.Ping()
-	if err != nil {
-		if err = db.Close(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-		}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
 		log.Fatal(fmt.Errorf("ping db %s : %w", cfg.DatabaseStr(), err))
 	}
 
@@ -90,17 +87,20 @@ func main() {
 	}
 
 	r, err := router.NewRouter(db, logger, gmail, rdb, jwt)
+	_ = r
 	if err != nil {
 		log.Fatal(fmt.Errorf("initialize router: %w", err))
 	}
 
 	log.Println("Initialized successfully")
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%v", cfg.HttpPort), r); err != nil {
-		log.Fatalf("failed to listen http: %v", err)
-	}
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf(":%v", cfg.HttpPort), r); err != nil {
+			log.Fatalf("failed to listen http: %v", err)
+		}
+	}()
 
-	lis, err := net.Listen("tcp", cfg.GrpcPort)
+	lis, err := net.Listen("tcp", ":"+cfg.GrpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen grpc: %v", err)
 	}

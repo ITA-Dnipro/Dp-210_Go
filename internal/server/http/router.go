@@ -2,6 +2,7 @@ package http
 
 import (
 	"database/sql"
+	"google.golang.org/grpc"
 
 	postgres "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/user"
 	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
@@ -18,13 +19,13 @@ import (
 )
 
 // NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
+func NewRouter(db *sql.DB, logger *zap.Logger, conn *grpc.ClientConn) chi.Router {
 	repo := postgres.NewRepository(db)
 	repoD := postgresDoctor.NewRepository(db)
 
 	usecase := usecases.NewUsecases(repo)
 
-	md := &middleware.Middleware{Logger: logger}
+	md := middleware.New(logger, conn)
 	hs := handlers.NewHandlers(usecase, logger)
 
 	usecaseD := usecasesDoctor.NewUsecases(repoD, repo)
