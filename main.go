@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"google.golang.org/grpc"
 	"log"
 	"net/http"
 	"os"
@@ -56,7 +57,15 @@ func main() {
 		log.Fatal(fmt.Errorf("db migrations: %w", err))
 	}
 
-	r := router.NewRouter(db, logger)
+	//move to main, inject connection
+	conn, err := grpc.Dial(config.GetConfig().AuthAddress, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not validate token via grpc %v", err)
+		return
+	}
+	defer conn.Close()
+
+	r := router.NewRouter(db, logger, conn)
 	// Start server
 	log.Println("Initialized successfully")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", cfg.AppPort), r))

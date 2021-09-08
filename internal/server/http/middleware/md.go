@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"context"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/middleware/proto"
+	"google.golang.org/grpc"
 	"net/http"
 	"time"
 
@@ -16,7 +18,15 @@ type UserUsecases interface {
 type Middleware struct {
 	Logger *zap.Logger
 	//UserUC UserUsecases
-	AuthUrl string
+	grpcClient proto.TokenValidatorClient
+}
+
+func New(logger *zap.Logger, conn *grpc.ClientConn) *Middleware {
+	c := proto.NewTokenValidatorClient(conn)
+	return &Middleware{
+		Logger:     logger,
+		grpcClient: c,
+	}
 }
 
 func (m *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
