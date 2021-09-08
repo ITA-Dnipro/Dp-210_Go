@@ -1,23 +1,42 @@
 version: "3.8"
 
 services:
-  webapp:
-    container_name: dp210go_ctr
-    image: dp210goimg
-    working_dir: /app
-    command: ./dp210goapp
-    links:
-      - redis
-    env_file:
-      - ./env/db.env
-      - ./env/webapp.env
-    ports:
-      - "127.0.0.1:8000:8000"
-    depends_on:
-      - redis
-      - db
-    networks:
-      - fullstack
+  #~ webapp_user:
+    #~ container_name: dp210go_ctr_user
+    #~ image: dp210goimg
+    #~ working_dir: /app
+    #~ command: ./dp210goapp
+    #~ links:
+      #~ - redis
+    #~ env_file:
+      #~ - ./env/db.env
+      #~ - ./env/webapp.env
+    #~ ports:
+      #~ - "127.0.0.1:8000:8000"
+    #~ depends_on:
+      #~ - redis
+      #~ - db
+    #~ networks:
+      #~ - fullstack
+      
+      
+  #~ webapp_doctor:
+    #~ container_name: dp210go_ctr_doctor
+    #~ image: dp210goimg_doctor
+    #~ working_dir: /app
+    #~ command: ./dp210goapp_doctor
+    #~ links:
+      #~ - redis
+    #~ env_file:
+      #~ - ./env/db.env
+      #~ - ./env/webapp.env
+    #~ ports:
+      #~ - "127.0.0.1:8000:8000"
+    #~ depends_on:
+      #~ - redis
+      #~ - db
+    #~ networks:
+      #~ - fullstack
 
   redis:
     container_name: dp210go_redisctr

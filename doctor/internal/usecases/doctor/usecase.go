@@ -2,54 +2,55 @@ package doctor
 
 import (
 	"context"
-	"fmt"
+	_ "fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	_ "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 )
 
 // UsersRepository represent user repository.
-type UsersRepository interface {
-	Update(ctx context.Context, u *entity.User) error
-	GetByID(ctx context.Context, id string) (entity.User, error)
-}
+type UsersRepository interface{}
+
+//~ Update(ctx context.Context, u *entity.User) error
+//~ GetByID(ctx context.Context, id string) (entity.User, error)
+//~ }
 
 // DoctorsRepository represent doctor repository.
 type DoctorsRepository interface {
-	Create(ctx context.Context, u *entity.Doctor) error
-	Update(ctx context.Context, u *entity.Doctor) error
+	Create(ctx context.Context, d *entity.Doctor) error
+	Update(ctx context.Context, d *entity.Doctor) error
 	GetByID(ctx context.Context, id string) (entity.Doctor, error)
 	GetAll(ctx context.Context) ([]entity.Doctor, error)
 	Delete(ctx context.Context, id string) error
 }
 
 // NewUsecases create new doctor usecases.
-func NewUsecases(dr DoctorsRepository, ur UsersRepository) *Usecases {
+func NewUsecases(dr DoctorsRepository /*, ur UsersRepository*/) *Usecases {
 	return &Usecases{
 		dr: dr,
-		ur: ur,
+		//ur: ur,
 	}
 }
 
 // Usecases represent a doctor usecases.
 type Usecases struct {
 	dr DoctorsRepository
-	ur UsersRepository
+	//ur UsersRepository
 }
 
 // Create Add new doctor
 func (uc *Usecases) Create(ctx context.Context, d *entity.Doctor) error {
-	user, err := uc.ur.GetByID(ctx, d.ID)
-	if err != nil {
-		return fmt.Errorf("get user by %s id: %w", d.ID, err)
-	}
-	if user.PermissionRole != role.Viewer {
-		return fmt.Errorf("user alredy registered as %s", user.PermissionRole)
-	}
-	user.PermissionRole = role.Doctor
-	if err := uc.ur.Update(ctx, &user); err != nil {
-		return fmt.Errorf("update user: %w", err)
-	}
+	//~ user, err := uc.ur.GetByID(ctx, d.ID)
+	//~ if err != nil {
+	//~ return fmt.Errorf("get user by %s id: %w", d.ID, err)
+	//~ }
+	//~ if user.PermissionRole != role.Viewer {
+	//~ return fmt.Errorf("user alredy registered as %s", user.PermissionRole)
+	//~ }
+	//~ user.PermissionRole = role.Doctor
+	//~ if err := uc.ur.Update(ctx, &user); err != nil {
+	//~ return fmt.Errorf("update user: %w", err)
+	//~ }
 
 	return uc.dr.Create(ctx, d)
 }

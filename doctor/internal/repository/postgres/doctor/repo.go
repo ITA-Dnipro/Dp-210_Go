@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 )
 
 var _ usecases.DoctorsRepository = (*Repository)(nil)

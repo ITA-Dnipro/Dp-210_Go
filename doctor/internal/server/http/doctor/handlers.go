@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/customerrors"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
