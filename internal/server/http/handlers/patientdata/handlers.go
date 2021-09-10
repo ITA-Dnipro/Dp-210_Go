@@ -1,73 +1,110 @@
 package patientdata
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
-	"os"
 	"strings"
+
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+
+	"github.com/go-playground/validator/v10"
 )
 
 const idKey = "id"
 
-type PatDataUsecases interface {
-	CreateRecord(ctx context.Context, u *entity.PatientData) error
+type PatientUsecases interface {
+	CreateRecord(ctx context.Context, u *entity.Patient) error
+	GetByEmail(ctx context.Context, email string) *entity.Patient
+	CreateUserFromPatient(ctx context.Context, u entity.NewUser, p *entity.Patient) error
 }
 
 type Handlers struct {
-	usecases PatDataUsecases
-	logger   *zap.Logger
+	patientUsecases PatientUsecases
+	logger          *zap.Logger
 }
 
-func NewHandlers(pdUcs PatDataUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{usecases: pdUcs, logger: log}
-}
-
-func (h *Handlers) CreatePatientDataFromCSV(w http.ResponseWriter, r *http.Request) {
-	records := make([]string, 0)
-	scanner := bufio.NewScanner(r.Body)
-	for scanner.Scan() {
-		records = append(records, scanner.Text())
-	}
-	if scanner.Err() != nil {
-		fmt.Println(scanner.Err())
-	}
-
-	if len(records) != 7 {
-		_, _ = fmt.Fprintln(os.Stderr, "no data or can't proceed")
-		return
-	}
-
-	patientData := entity.NewPatientData(strings.Split(records[5], ";"))
-
-	if err := h.usecases.CreateRecord(r.Context(), patientData); err != nil {
-		h.logger.Error("can't create a patientData", zap.Error(err))
-		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
-		return
-	}
-	h.logger.Info("patientData has been created", zap.String(idKey, patientData.Id.String()))
-	h.render(w, patientData)
+func NewHandlers(pdUcs PatientUsecases, log *zap.Logger) *Handlers {
+	return &Handlers{patientUsecases: pdUcs, logger: log}
 }
 
 func (h *Handlers) CreatePatientDataFromJSON(w http.ResponseWriter, r *http.Request) {
-	patientData := new(entity.PatientData)
-	if err := json.NewDecoder(r.Body).Decode(&patientData); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
-		return
-	}
-	patientData.CorrectData()
-
-	if err := h.usecases.CreateRecord(r.Context(), patientData); err != nil {
-		h.logger.Error("can't create a patientData", zap.Error(err))
+	ctx := r.Context()
+	patient := new(entity.Patient)
+	patient.AdditionalInfo()
+	if err := json.NewDecoder(r.Body).Decode(patient); err != nil {
+		h.logger.Error("can't create a patient", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("patientData has been created", zap.String(idKey, patientData.Id.String()))
-	h.render(w, patientData)
+
+	if err := isValid(patient); err != nil {
+		h.logger.Error("can't validate the patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+
+	if patientFromDb := h.patientUsecases.GetByEmail(ctx, patient.Email); patientFromDb != nil {
+		h.logger.Error("db error", zap.Error(errors.New(fmt.Sprintf("patient with email {%s} already exist", patient.Email))))
+		h.writeErrorResponse(http.StatusInternalServerError, fmt.Sprintf("patient with email {%s} already exist", patient.Email), w)
+		return
+	}
+
+	if err := h.patientUsecases.CreateUserFromPatient(ctx, entity.NewUser{Password: "dp210go"}, patient); err != nil {
+		h.logger.Error("can't create a user from patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+
+	if err := h.patientUsecases.CreateRecord(ctx, patient); err != nil {
+		h.logger.Error("can't create a patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	h.logger.Info("patient and user have been created", zap.String(idKey, patient.Id.String()))
+	h.render(w, patient)
+}
+
+func (h *Handlers) CreatePatientDataFromCSV(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bytes, _ := io.ReadAll(r.Body)
+	csvStrData := strings.Split(strings.TrimSpace(string(bytes)), "\n")[5]
+	csvArr := strings.Split(csvStrData, ",")
+	patient, err := entity.NewPatient(csvArr)
+	if err != nil {
+		h.logger.Error("can't create a patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	if err = isValid(patient); err != nil {
+		h.logger.Error("can't validate the patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+
+	if patientFromDb := h.patientUsecases.GetByEmail(ctx, patient.Email); patientFromDb != nil {
+		h.logger.Error("db error", zap.Error(errors.New(fmt.Sprintf("patient with email {%s} already exist", patient.Email))))
+		h.writeErrorResponse(http.StatusInternalServerError, fmt.Sprintf("patient with email {%s} already exist", patient.Email), w)
+		return
+	}
+
+	if err := h.patientUsecases.CreateUserFromPatient(ctx, entity.NewUser{Password: "dp210go"}, patient); err != nil {
+		h.logger.Error("can't create a user from patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+
+	if err = h.patientUsecases.CreateRecord(r.Context(), patient); err != nil {
+		h.logger.Error("can't create a patient", zap.Error(err))
+		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	h.logger.Info("patient has been created", zap.String(idKey, patient.Id.String()))
+	h.render(w, patient)
 }
 
 type Message struct {
@@ -83,4 +120,9 @@ func (h *Handlers) render(w http.ResponseWriter, data interface{}) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "\t")
 	_ = enc.Encode(data)
+}
+
+func isValid(p *entity.Patient) error {
+	validate := validator.New()
+	return validate.Struct(*p)
 }

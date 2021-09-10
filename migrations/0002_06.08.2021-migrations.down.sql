@@ -14,5 +14,3 @@ DROP TABLE IF EXISTS schedules cascade;
 DROP TABLE IF EXISTS doctors cascade;
 
 DROP TABLE IF EXISTS appointments cascade;
-
-DROP TABLE IF EXISTS data_from_patients cascade;

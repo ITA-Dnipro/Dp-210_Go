@@ -59,7 +59,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 	hsD := handlersDoctor.NewHandlers(usecaseD, logger)
 
 	repoPD := postgresPatientData.NewRepository(db)
-	usecasePD := usecasesPD.NewUsecases(repoPD)
+	usecasePD := usecasesPD.NewUsecases(repoPD, repo)
 	hsPD := handlersPD.NewHandlers(usecasePD, logger)
 
 	r := chi.NewRouter()
@@ -89,8 +89,8 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 		r.Get("/doctors/{id}", hsD.GetDoctor) // GET /api/v1/doctors/<id>
 
 		r.Route("/patient", func(r chi.Router) {
-			r.Post("/card", hsPD.CreatePatientDataFromCSV)  // POST /api/v1/patient/card
-			r.Post("/info", hsPD.CreatePatientDataFromJSON) // POST /api/v1/patient/info
+			r.Post("/", hsPD.CreatePatientDataFromJSON)    // POST /api/v1/patient/
+			r.Post("/file", hsPD.CreatePatientDataFromCSV) // POST /api/v1/patient/file
 		})
 
 		r.Route("/", func(r chi.Router) { // route with permissions

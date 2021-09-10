@@ -12,9 +12,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS patients (
-   id uuid PRIMARY KEY REFERENCES users (id),
-   first_name varchar(25),
-   last_name varchar(25)
+    id uuid PRIMARY KEY REFERENCES users (id),
+    name varchar(25) NOT NULL,
+    email varchar(25) UNIQUE NOT NULL,
+    gender varchar(25) NOT NULL,
+    age INT NOT NULL,
+    phone varchar(20) UNIQUE NOT NULL,
+    address varchar(150) NOT NULL,
+    disability BOOLEAN NOT NULL,
+    reg_at date NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS doctors (
@@ -37,20 +43,3 @@ CREATE TABLE IF NOT EXISTS appointments (
 
 INSERT INTO roles (name)
    VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient');
-
-CREATE TABLE IF NOT EXISTS data_from_patients (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4 (),
-    first_name varchar(25) NOT NULL,
-    last_name varchar(25) NOT NULL,
-    email varchar(25) UNIQUE NOT NULL,
-    gender varchar(25) NOT NULL,
-    birthday_str varchar(10) NOT NULL,
-    phone varchar(20) NOT NULL,
-    address varchar(150) NOT NULL,
-    job_info varchar(150) NOT NULL,
-    disability BOOLEAN NOT NULL,
-    allergies BOOLEAN NOT NULL,
-    reg_date date NOT NULL,
-    patient_role INT NOT NULL
-);
-

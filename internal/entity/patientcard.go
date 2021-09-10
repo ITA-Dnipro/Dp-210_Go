@@ -2,60 +2,42 @@ package entity
 
 import (
 	"github.com/google/uuid"
+	"strconv"
+	"strings"
 	"time"
 )
 
-type PatientData struct {
-	Id          uuid.UUID
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Email       string `json:"email"`
-	Gender      string `json:"gender"`
-	BirthDayStr string `json:"birthday_str"`
-	Phone       string `json:"phone"`
-	Address     string `json:"address"`
-	JobInfo     string `json:"job_info"`
-	Disability  string `json:"disability"`
-	DisabilityB bool
-	Allergies   string `json:"allergies"`
-	AllergiesB  bool
-	RegDayTime  time.Time
-	Role        int
+type Patient struct {
+	Id         uuid.UUID
+	Name       string `json:"name" validate:"required,min=3,max=25"`
+	Email      string `json:"email" validate:"required,email,min=5,max=25"`
+	Gender     string `json:"gender" validate:"required,eq=Male|eq=Female"`
+	Age        int    `json:"age" validate:"required,numeric,gt=0,lte=100"`
+	Phone      string `json:"phone" validate:"required,e164"`
+	Address    string `json:"address" validate:"required,max=150"`
+	Disability bool   `json:"disability"`
+	RegAt      time.Time
 }
 
-func NewPatientData(dataArr []string) *PatientData {
-	patientCard := &PatientData{
-		FirstName:   dataArr[0],
-		LastName:    dataArr[1],
-		Email:       dataArr[2],
-		Gender:      dataArr[3],
-		BirthDayStr: dataArr[4],
-		Phone:       dataArr[5],
-		Address:     dataArr[6],
-		JobInfo:     dataArr[7],
-		Disability:  dataArr[8],
-		Allergies:   dataArr[9],
+func NewPatient(dataArr []string) (p *Patient, err error) {
+	p = &Patient{
+		Name:    dataArr[0],
+		Email:   dataArr[1],
+		Gender:  dataArr[2],
+		Phone:   dataArr[4],
+		Address: dataArr[5],
 	}
-	patientCard.CorrectData()
-	return patientCard
+	if p.Age, err = strconv.Atoi(strings.TrimSpace(dataArr[3])); err != nil {
+		return nil, err
+	}
+	if p.Disability, err = strconv.ParseBool(strings.TrimSpace(dataArr[6])); err != nil {
+		return nil, err
+	}
+	p.AdditionalInfo()
+	return p, nil
 }
 
-func (pc *PatientData) CorrectData() {
-	pc.Id = uuid.New()
-	if pc.Gender != "male" && pc.Gender != "female" && pc.Gender != "not specified" {
-		pc.Gender = "not specified"
-	}
-	if pc.Disability != "yes" && pc.Disability != "no" {
-		pc.Disability = "no"
-	}
-	if pc.Disability == "yes" {
-		pc.DisabilityB = true
-	}
-	if pc.Allergies == "yes" {
-		pc.AllergiesB = true
-	}
-	if pc.Allergies != "yes" && pc.Allergies != "no" {
-		pc.Allergies = "no"
-	}
-	pc.RegDayTime = time.Now()
+func (p *Patient) AdditionalInfo() {
+	p.Id = uuid.New()
+	p.RegAt = time.Now()
 }
