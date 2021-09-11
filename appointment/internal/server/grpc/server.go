@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/config"
@@ -13,30 +14,32 @@ import (
 )
 
 type Usecase interface {
-	GetWithFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
+	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
 }
 type Server struct {
-	srv  *grpc.Server
-	host string
+	srv    *grpc.Server
+	cfg    config.Config
+	logger *zap.Logger
 }
 
 // NewGRPCServer create grpc server.
 func NewGRPCServer(cfg config.Config, uc Usecase, logger *zap.Logger) *Server {
 	grpcServer := grpc.NewServer()
 	as := appointment.NewAppointmentService(uc, logger)
-	appointmentsService.RegisterUsersServiceServer(grpcServer, as)
-	return &Server{srv: grpcServer, host: cfg.GRPCHost}
+	appointmentsService.RegisterAppointmentServiceServer(grpcServer, as)
+	return &Server{srv: grpcServer, cfg: cfg, logger: logger}
 }
 
 func (s *Server) Serve() error {
-	l, err := net.Listen("tcp", s.host)
+	s.logger.Info(fmt.Sprintf("startup grpc server:%s", s.cfg.GRPCHost))
+	l, err := net.Listen("tcp", s.cfg.GRPCHost)
 	if err != nil {
 		return err
 	}
-	defer l.Close()
 	return s.srv.Serve(l)
 }
 
 func (s *Server) GracefulStop() {
 	s.srv.GracefulStop()
+	s.logger.Info("grpc server shutdown")
 }

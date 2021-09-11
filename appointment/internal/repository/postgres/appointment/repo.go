@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
+	"strconv"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 
@@ -66,7 +67,7 @@ func (r *Repository) Create(ctx context.Context, a *entity.Appointment) error {
 }
 
 // Delete deletes a appointment from storage.
-func (r *Repository) Delete(ctx context.Context, id string) error {
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM appointments WHERE id = $1`
 	res, err := r.storage.ExecContext(ctx, query, id)
 	if err != nil {
@@ -112,30 +113,27 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 }
 
 //GetWithFilter.
-func (r *Repository) GetWithFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error) {
-	var b strings.Builder
-	b.WriteString(`
-	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
-	FROM appointments 
-	WHERE 1=1`)
+func (r *Repository) GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error) {
+	query := `SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
+			  FROM appointments 
+			  WHERE 1=1`
 	args := []interface{}{}
 	if filter.DoctorID != nil {
 		args = append(args, *filter.DoctorID)
-		b.WriteString(fmt.Sprintf(` AND doctor_id = $%d`, len(args)))
+		query += ` AND doctor_id = $%d` + strconv.Itoa(len(args))
 	}
 	if filter.PatientID != nil {
 		args = append(args, *filter.PatientID)
-		b.WriteString(fmt.Sprintf(` AND patient_id = $%d`, len(args)))
+		query += ` AND patient_id = $%d` + strconv.Itoa(len(args))
 	}
 	if filter.From != nil {
 		args = append(args, *filter.From)
-		b.WriteString(fmt.Sprintf(` AND lower(time_range) > $%d`, len(args)))
+		query += ` AND lower(time_range) > $%d` + strconv.Itoa(len(args))
 	}
 	if filter.To != nil {
 		args = append(args, *filter.To)
-		b.WriteString(fmt.Sprintf(` AND upper(time_range) < $%d`, len(args)))
+		query += ` AND upper(time_range) < $%d` + strconv.Itoa(len(args))
 	}
-	b.WriteString(` ORDER BY lower(time_range)`)
-	query := b.String()
+	query += ` ORDER BY lower(time_range)`
 	return r.fetch(ctx, query, args...)
 }

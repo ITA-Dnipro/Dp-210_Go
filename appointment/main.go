@@ -58,11 +58,6 @@ func run(logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return fmt.Errorf("connecting to kafka: %w", err)
-	}
-	//defer k.Close()
-
 	logger.Info("Initializing server")
 	return server.Serve(cfg, db, dc, k, logger)
 }

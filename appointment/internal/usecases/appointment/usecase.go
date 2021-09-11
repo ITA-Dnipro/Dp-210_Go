@@ -12,14 +12,14 @@ import (
 
 // AppointmentsRepository represent doctor repository.
 type AppointmentsRepository interface {
-	GetWithFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
+	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
 	Create(ctx context.Context, a *entity.Appointment) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // DoctorsClient represent doctor grpc client.
 type DoctorsClient interface {
-	GetByID(ctx context.Context, id string) (entity.Doctor, error)
+	GetByID(ctx context.Context, id uuid.UUID) (entity.Doctor, error)
 }
 
 //Producer represent Kafka producer.
@@ -49,15 +49,16 @@ func (uc *Usecases) CreateRequest(ctx context.Context, a *entity.Appointment) er
 	// if a.From.Before(time.Now().UTC()) {
 	// 	return fmt.Errorf("can't create appointment in past %s", a.From)
 	// }
-	// d, err := uc.dr.GetByID(ctx, a.DoctorID)
-	// if err != nil {
-	// 	return fmt.Errorf("can't find a doctor with %v id", a.DoctorID)
-	// }
+	d, err := uc.dr.GetByID(ctx, a.DoctorID)
+	if err != nil {
+		return fmt.Errorf("can't find a doctor with %v id, %w", a.DoctorID, err)
+	}
+	fmt.Println(d)
 	a.To = a.From.Add(time.Minute * 30)
 	// if a.To.After(d.EndAt) || a.From.Before(d.StartAt) {
 	// 	return fmt.Errorf("doctor doesn't work %v - %v", a.From, a.To)
 	// }
-	a.ID = uuid.New().String()
+	a.ID = uuid.New()
 	return uc.producer.SendAppointment(a)
 }
 func (uc *Usecases) CreateFromEvent(payload []byte) error {
@@ -81,7 +82,7 @@ func (uc *Usecases) Create(ctx context.Context, a *entity.Appointment) error {
 }
 
 // Delete deletes a appointment from storage.
-func (uc *Usecases) Delete(ctx context.Context, id string) error {
+func (uc *Usecases) Delete(ctx context.Context, id uuid.UUID) error {
 	return uc.ar.Delete(ctx, id)
 }
 
@@ -96,6 +97,6 @@ func (uc *Usecases) DeleteWithBilling(ctx context.Context, a *entity.Appointment
 	return nil
 }
 
-func (uc *Usecases) GetWithFilter(ctx context.Context, f entity.AppointmentFilter) ([]entity.Appointment, error) {
-	return uc.ar.GetWithFilter(ctx, f)
+func (uc *Usecases) GetByFilter(ctx context.Context, f entity.AppointmentFilter) ([]entity.Appointment, error) {
+	return uc.ar.GetByFilter(ctx, f)
 }

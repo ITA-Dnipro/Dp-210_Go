@@ -18,14 +18,14 @@ message Appointment {
 
 message Empty {}
 
-message GetByIDReq {
-  string UserID = 1;
+message GetByDoctrorIDReq {
+  string DoctorID = 1;
   google.protobuf.Timestamp From = 2;
-  google.protobuf.Timestamp To = 3;
+  google.protobuf.Timestamp Till = 3;
 }
 
-message GetByIDRes { repeated Appointment Appointment = 1; }
+message GetByDoctorIDRes { repeated Appointment Appointments = 1; }
 
-service UsersService {
-  rpc GetByID(GetByIDReq) returns (GetByIDRes) {}
+service AppointmentService {
+  rpc GetByDoctorID(GetByDoctrorIDReq) returns (GetByDoctorIDRes) {}
 }

@@ -84,7 +84,7 @@ func (k *Kafka) on(topic string, handler fnHandler) error {
 				message := <-pc.Messages()
 				k.logger.Info("recive message ", zap.String("topic", message.Topic))
 				if err := handler(message.Value); err != nil {
-					k.logger.Error("can't marsha message",
+					k.logger.Error("handel message",
 						zap.String("topic", message.Topic),
 						zap.Error(err),
 					)

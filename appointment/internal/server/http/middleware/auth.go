@@ -7,6 +7,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/middleware/auth"
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -42,8 +43,8 @@ func NewContext(ctx context.Context, claims *auth.AuthClaims) context.Context {
 	return context.WithValue(ctx, userRoleKey, claims.UserRole)
 }
 
-func UserIDFromContext(ctx context.Context) (string, bool) {
-	id, ok := ctx.Value(userIdKey).(string)
+func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(userIdKey).(uuid.UUID)
 	return id, ok
 }
 func UserRoleFromContext(ctx context.Context) (role.Role, bool) {

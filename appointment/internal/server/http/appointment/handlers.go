@@ -11,6 +11,7 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/role"
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/customerrors"
+	"github.com/google/uuid"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/middleware"
 	"github.com/go-chi/chi"
@@ -22,9 +23,9 @@ const idKey = "id"
 
 // Usecase represent appointment usecase.
 type Usecase interface {
-	GetWithFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
+	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
 	CreateRequest(ctx context.Context, a *entity.Appointment) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // Handlers represent a user handlers.
@@ -38,7 +39,7 @@ type NewAppointment struct {
 }
 
 // NewHandlers create new user handlers.
-func NewHandlers(uc Usecase, logger *zap.Logger) *chi.Mux {
+func NewHandlers(uc Usecase, logger *zap.Logger) http.Handler {
 	h := &Handlers{usecase: uc, logger: logger}
 	md := middleware.NewMiddleware(logger)
 	r := chi.NewRouter()
@@ -75,9 +76,16 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "context user data invalid", w)
 		return
 	}
+
+	doctorID, err := uuid.Parse(chi.URLParam(r, idKey)) // Gets params
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "id parse uuid", w)
+		return
+	}
+
 	a := entity.Appointment{
 		PatientID: id,
-		DoctorID:  chi.URLParam(r, idKey),
+		DoctorID:  doctorID,
 		From:      na.From,
 	}
 
@@ -86,37 +94,56 @@ func (h *Handlers) CreateAppointment(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("appointment has been created", zap.String(idKey, a.ID))
+	h.logger.Info("appointment has been send", zap.String(idKey, a.ID.String()))
 	h.render(w, a)
 }
 
 func (h *Handlers) GetAppointments(w http.ResponseWriter, r *http.Request) {
-	id, idOk := middleware.UserIDFromContext(r.Context())
-	userRole, roleOk := middleware.UserRoleFromContext(r.Context())
-	if !idOk || !roleOk {
+	id, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "context user data invalid", w)
 		return
 	}
-	f := entity.AppointmentFilter{}
+
+	filter, err := getFilter(r)
+	if err != nil {
+		h.logger.Error("filter params", zap.Error(err))
+		h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
+		return
+	}
+
+	userRole, ok := middleware.UserRoleFromContext(r.Context())
+	if !ok {
+		h.writeErrorResponse(http.StatusBadRequest, "context user data invalid", w)
+		return
+	}
+
 	if userRole == role.Doctor {
-		f.DoctorID = &id
+		filter.DoctorID = &id
 	}
+
 	if userRole == role.Patient {
-		f.PatientID = &id
+		filter.PatientID = &id
 	}
-	a, err := h.usecase.GetWithFilter(r.Context(), f)
+
+	a, err := h.usecase.GetByFilter(r.Context(), filter)
 	if err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("get all appointments by user id", zap.String(idKey, id))
+	h.logger.Info("get all appointments by user id", zap.String(idKey, id.String()))
 	h.render(w, a)
 }
 
 // DeleteAppointment deletes a appointment from storage
 func (h *Handlers) DeleteAppointment(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, idKey) // Gets params
+	id, err := uuid.Parse(chi.URLParam(r, idKey)) // Gets params
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "id parse uuid", w)
+		return
+	}
+
 	if err := h.usecase.Delete(r.Context(), id); err != nil {
 		h.logger.Error("can't delete", zap.Error(err))
 		if errors.Is(err, customerrors.NotFound) {
@@ -128,8 +155,45 @@ func (h *Handlers) DeleteAppointment(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-
 	h.render(w, Message{"deleted"})
+}
+
+func getFilter(r *http.Request) (entity.AppointmentFilter, error) {
+	filter := entity.AppointmentFilter{}
+	const (
+		fromKey      = "from"
+		toKey        = "to"
+		doctorIDKey  = "doctorID"
+		patientIDKey = "patientID"
+	)
+
+	query := r.URL.Query()
+
+	if query.Has(fromKey) {
+		from, err := time.Parse(time.RFC3339, query.Get(fromKey))
+		if err != nil {
+			return filter, err
+		}
+		filter.From = &from
+	}
+
+	if query.Has(toKey) {
+		to, err := time.Parse(time.RFC3339, query.Get(toKey))
+		if err != nil {
+			return filter, err
+		}
+		filter.To = &to
+	}
+
+	if query.Has(doctorIDKey) {
+		doctorID, err := uuid.Parse(query.Get(doctorIDKey))
+		if err != nil {
+			return filter, err
+		}
+		filter.DoctorID = &doctorID
+	}
+
+	return filter, nil
 }
 
 // Message represent error message.

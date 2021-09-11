@@ -5,6 +5,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	ds "github.com/ITA-Dnipro/Dp-210_Go/appointment/proto/doctors"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
@@ -14,25 +15,30 @@ type Client struct {
 }
 
 func NewDoctorClient(address string) (*Client, error) {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address,
+		grpc.FailOnNonTempDialError(true),
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
 	if err != nil {
 		return &Client{}, err
 	}
 	return &Client{client: ds.NewDoctorsServiceClient(conn), conn: conn}, nil
 }
 
-func (c *Client) GetByID(ctx context.Context, id string) (entity.Doctor, error) {
-	r, err := c.client.GetByID(ctx, &ds.GetByIDReq{DoctorID: id})
+func (c *Client) GetByID(ctx context.Context, id uuid.UUID) (entity.Doctor, error) {
+	r, err := c.client.GetByID(ctx, &ds.GetByIDReq{DoctorID: id.String()})
 	if err != nil {
 		return entity.Doctor{}, err
 	}
+	rd := r.GetDoctor()
 	d := entity.Doctor{
-		ID:         r.Doctor.DoctorID,
-		FirstName:  r.Doctor.FirstName,
-		LastName:   r.Doctor.LastName,
-		Speciality: r.Doctor.Speciality,
-		StartAt:    r.Doctor.EndAt.AsTime(),
-		EndAt:      r.Doctor.EndAt.AsTime(),
+		ID:         rd.GetDoctorID(),
+		FirstName:  rd.GetFirstName(),
+		LastName:   rd.GetLastName(),
+		Speciality: rd.GetSpeciality(),
+		StartAt:    rd.GetStartAt().AsTime(),
+		EndAt:      rd.GetEndAt().AsTime(),
 	}
 	//TODO: add validation
 	return d, nil

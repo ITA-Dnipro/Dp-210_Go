@@ -157,18 +157,18 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_appointments_proto_rawDescGZIP(), []int{1}
 }
 
-type GetByIDReq struct {
+type GetByDoctrorIDReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserID string               `protobuf:"bytes,1,opt,name=UserID,proto3" json:"UserID,omitempty"`
-	From   *timestamp.Timestamp `protobuf:"bytes,2,opt,name=From,proto3" json:"From,omitempty"`
-	To     *timestamp.Timestamp `protobuf:"bytes,3,opt,name=To,proto3" json:"To,omitempty"`
+	DoctorID string               `protobuf:"bytes,1,opt,name=DoctorID,proto3" json:"DoctorID,omitempty"`
+	From     *timestamp.Timestamp `protobuf:"bytes,2,opt,name=From,proto3" json:"From,omitempty"`
+	Till     *timestamp.Timestamp `protobuf:"bytes,3,opt,name=Till,proto3" json:"Till,omitempty"`
 }
 
-func (x *GetByIDReq) Reset() {
-	*x = GetByIDReq{}
+func (x *GetByDoctrorIDReq) Reset() {
+	*x = GetByDoctrorIDReq{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_appointments_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -176,13 +176,13 @@ func (x *GetByIDReq) Reset() {
 	}
 }
 
-func (x *GetByIDReq) String() string {
+func (x *GetByDoctrorIDReq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetByIDReq) ProtoMessage() {}
+func (*GetByDoctrorIDReq) ProtoMessage() {}
 
-func (x *GetByIDReq) ProtoReflect() protoreflect.Message {
+func (x *GetByDoctrorIDReq) ProtoReflect() protoreflect.Message {
 	mi := &file_appointments_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -194,42 +194,42 @@ func (x *GetByIDReq) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetByIDReq.ProtoReflect.Descriptor instead.
-func (*GetByIDReq) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetByDoctrorIDReq.ProtoReflect.Descriptor instead.
+func (*GetByDoctrorIDReq) Descriptor() ([]byte, []int) {
 	return file_appointments_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetByIDReq) GetUserID() string {
+func (x *GetByDoctrorIDReq) GetDoctorID() string {
 	if x != nil {
-		return x.UserID
+		return x.DoctorID
 	}
 	return ""
 }
 
-func (x *GetByIDReq) GetFrom() *timestamp.Timestamp {
+func (x *GetByDoctrorIDReq) GetFrom() *timestamp.Timestamp {
 	if x != nil {
 		return x.From
 	}
 	return nil
 }
 
-func (x *GetByIDReq) GetTo() *timestamp.Timestamp {
+func (x *GetByDoctrorIDReq) GetTill() *timestamp.Timestamp {
 	if x != nil {
-		return x.To
+		return x.Till
 	}
 	return nil
 }
 
-type GetByIDRes struct {
+type GetByDoctorIDRes struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Appointment []*Appointment `protobuf:"bytes,1,rep,name=Appointment,proto3" json:"Appointment,omitempty"`
+	Appointments []*Appointment `protobuf:"bytes,1,rep,name=Appointments,proto3" json:"Appointments,omitempty"`
 }
 
-func (x *GetByIDRes) Reset() {
-	*x = GetByIDRes{}
+func (x *GetByDoctorIDRes) Reset() {
+	*x = GetByDoctorIDRes{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_appointments_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -237,13 +237,13 @@ func (x *GetByIDRes) Reset() {
 	}
 }
 
-func (x *GetByIDRes) String() string {
+func (x *GetByDoctorIDRes) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetByIDRes) ProtoMessage() {}
+func (*GetByDoctorIDRes) ProtoMessage() {}
 
-func (x *GetByIDRes) ProtoReflect() protoreflect.Message {
+func (x *GetByDoctorIDRes) ProtoReflect() protoreflect.Message {
 	mi := &file_appointments_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -255,14 +255,14 @@ func (x *GetByIDRes) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetByIDRes.ProtoReflect.Descriptor instead.
-func (*GetByIDRes) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetByDoctorIDRes.ProtoReflect.Descriptor instead.
+func (*GetByDoctorIDRes) Descriptor() ([]byte, []int) {
 	return file_appointments_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetByIDRes) GetAppointment() []*Appointment {
+func (x *GetByDoctorIDRes) GetAppointments() []*Appointment {
 	if x != nil {
-		return x.Appointment
+		return x.Appointments
 	}
 	return nil
 }
@@ -289,26 +289,29 @@ var file_appointments_proto_rawDesc = []byte{
 	0x6f, 0x6d, 0x12, 0x2a, 0x0a, 0x02, 0x54, 0x6f, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
 	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
 	0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x02, 0x54, 0x6f, 0x22, 0x07,
-	0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x80, 0x01, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x42,
-	0x79, 0x49, 0x44, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x55, 0x73, 0x65, 0x72, 0x49, 0x44,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x55, 0x73, 0x65, 0x72, 0x49, 0x44, 0x12, 0x2e,
-	0x0a, 0x04, 0x46, 0x72, 0x6f, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
-	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x04, 0x46, 0x72, 0x6f, 0x6d, 0x12, 0x2a,
-	0x0a, 0x02, 0x54, 0x6f, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
-	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
-	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x02, 0x54, 0x6f, 0x22, 0x50, 0x0a, 0x0a, 0x47, 0x65,
-	0x74, 0x42, 0x79, 0x49, 0x44, 0x52, 0x65, 0x73, 0x12, 0x42, 0x0a, 0x0b, 0x41, 0x70, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e,
-	0x61, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x52,
-	0x0b, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x32, 0x5d, 0x0a, 0x0c,
-	0x55, 0x73, 0x65, 0x72, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x4d, 0x0a, 0x07,
-	0x47, 0x65, 0x74, 0x42, 0x79, 0x49, 0x44, 0x12, 0x1f, 0x2e, 0x61, 0x70, 0x70, 0x6f, 0x69, 0x6e,
-	0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x47, 0x65,
-	0x74, 0x42, 0x79, 0x49, 0x44, 0x52, 0x65, 0x71, 0x1a, 0x1f, 0x2e, 0x61, 0x70, 0x70, 0x6f, 0x69,
-	0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x47,
-	0x65, 0x74, 0x42, 0x79, 0x49, 0x44, 0x52, 0x65, 0x73, 0x22, 0x00, 0x42, 0x17, 0x5a, 0x15, 0x2e,
+	0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x8f, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x42,
+	0x79, 0x44, 0x6f, 0x63, 0x74, 0x72, 0x6f, 0x72, 0x49, 0x44, 0x52, 0x65, 0x71, 0x12, 0x1a, 0x0a,
+	0x08, 0x44, 0x6f, 0x63, 0x74, 0x6f, 0x72, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x44, 0x6f, 0x63, 0x74, 0x6f, 0x72, 0x49, 0x44, 0x12, 0x2e, 0x0a, 0x04, 0x46, 0x72, 0x6f,
+	0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x52, 0x04, 0x46, 0x72, 0x6f, 0x6d, 0x12, 0x2e, 0x0a, 0x04, 0x54, 0x69, 0x6c,
+	0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x52, 0x04, 0x54, 0x69, 0x6c, 0x6c, 0x22, 0x58, 0x0a, 0x10, 0x47, 0x65, 0x74,
+	0x42, 0x79, 0x44, 0x6f, 0x63, 0x74, 0x6f, 0x72, 0x49, 0x44, 0x52, 0x65, 0x73, 0x12, 0x44, 0x0a,
+	0x0c, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x18, 0x01, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x61, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e,
+	0x74, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x0c, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65,
+	0x6e, 0x74, 0x73, 0x32, 0x76, 0x0a, 0x12, 0x41, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65,
+	0x6e, 0x74, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x60, 0x0a, 0x0d, 0x47, 0x65, 0x74,
+	0x42, 0x79, 0x44, 0x6f, 0x63, 0x74, 0x6f, 0x72, 0x49, 0x44, 0x12, 0x26, 0x2e, 0x61, 0x70, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x44, 0x6f, 0x63, 0x74, 0x72, 0x6f, 0x72, 0x49, 0x44, 0x52,
+	0x65, 0x71, 0x1a, 0x25, 0x2e, 0x61, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74,
+	0x73, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x42, 0x79, 0x44, 0x6f,
+	0x63, 0x74, 0x6f, 0x72, 0x49, 0x44, 0x52, 0x65, 0x73, 0x22, 0x00, 0x42, 0x17, 0x5a, 0x15, 0x2e,
 	0x3b, 0x61, 0x70, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x53, 0x65, 0x72,
 	0x76, 0x69, 0x63, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
@@ -329,18 +332,18 @@ var file_appointments_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_appointments_proto_goTypes = []interface{}{
 	(*Appointment)(nil),         // 0: appointmentsService.Appointment
 	(*Empty)(nil),               // 1: appointmentsService.Empty
-	(*GetByIDReq)(nil),          // 2: appointmentsService.GetByIDReq
-	(*GetByIDRes)(nil),          // 3: appointmentsService.GetByIDRes
+	(*GetByDoctrorIDReq)(nil),   // 2: appointmentsService.GetByDoctrorIDReq
+	(*GetByDoctorIDRes)(nil),    // 3: appointmentsService.GetByDoctorIDRes
 	(*timestamp.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_appointments_proto_depIdxs = []int32{
 	4, // 0: appointmentsService.Appointment.From:type_name -> google.protobuf.Timestamp
 	4, // 1: appointmentsService.Appointment.To:type_name -> google.protobuf.Timestamp
-	4, // 2: appointmentsService.GetByIDReq.From:type_name -> google.protobuf.Timestamp
-	4, // 3: appointmentsService.GetByIDReq.To:type_name -> google.protobuf.Timestamp
-	0, // 4: appointmentsService.GetByIDRes.Appointment:type_name -> appointmentsService.Appointment
-	2, // 5: appointmentsService.UsersService.GetByID:input_type -> appointmentsService.GetByIDReq
-	3, // 6: appointmentsService.UsersService.GetByID:output_type -> appointmentsService.GetByIDRes
+	4, // 2: appointmentsService.GetByDoctrorIDReq.From:type_name -> google.protobuf.Timestamp
+	4, // 3: appointmentsService.GetByDoctrorIDReq.Till:type_name -> google.protobuf.Timestamp
+	0, // 4: appointmentsService.GetByDoctorIDRes.Appointments:type_name -> appointmentsService.Appointment
+	2, // 5: appointmentsService.AppointmentService.GetByDoctorID:input_type -> appointmentsService.GetByDoctrorIDReq
+	3, // 6: appointmentsService.AppointmentService.GetByDoctorID:output_type -> appointmentsService.GetByDoctorIDRes
 	6, // [6:7] is the sub-list for method output_type
 	5, // [5:6] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
@@ -379,7 +382,7 @@ func file_appointments_proto_init() {
 			}
 		}
 		file_appointments_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetByIDReq); i {
+			switch v := v.(*GetByDoctrorIDReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -391,7 +394,7 @@ func file_appointments_proto_init() {
 			}
 		}
 		file_appointments_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetByIDRes); i {
+			switch v := v.(*GetByDoctorIDRes); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -431,72 +434,72 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// UsersServiceClient is the client API for UsersService service.
+// AppointmentServiceClient is the client API for AppointmentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type UsersServiceClient interface {
-	GetByID(ctx context.Context, in *GetByIDReq, opts ...grpc.CallOption) (*GetByIDRes, error)
+type AppointmentServiceClient interface {
+	GetByDoctorID(ctx context.Context, in *GetByDoctrorIDReq, opts ...grpc.CallOption) (*GetByDoctorIDRes, error)
 }
 
-type usersServiceClient struct {
+type appointmentServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewUsersServiceClient(cc grpc.ClientConnInterface) UsersServiceClient {
-	return &usersServiceClient{cc}
+func NewAppointmentServiceClient(cc grpc.ClientConnInterface) AppointmentServiceClient {
+	return &appointmentServiceClient{cc}
 }
 
-func (c *usersServiceClient) GetByID(ctx context.Context, in *GetByIDReq, opts ...grpc.CallOption) (*GetByIDRes, error) {
-	out := new(GetByIDRes)
-	err := c.cc.Invoke(ctx, "/appointmentsService.UsersService/GetByID", in, out, opts...)
+func (c *appointmentServiceClient) GetByDoctorID(ctx context.Context, in *GetByDoctrorIDReq, opts ...grpc.CallOption) (*GetByDoctorIDRes, error) {
+	out := new(GetByDoctorIDRes)
+	err := c.cc.Invoke(ctx, "/appointmentsService.AppointmentService/GetByDoctorID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// UsersServiceServer is the server API for UsersService service.
-type UsersServiceServer interface {
-	GetByID(context.Context, *GetByIDReq) (*GetByIDRes, error)
+// AppointmentServiceServer is the server API for AppointmentService service.
+type AppointmentServiceServer interface {
+	GetByDoctorID(context.Context, *GetByDoctrorIDReq) (*GetByDoctorIDRes, error)
 }
 
-// UnimplementedUsersServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedUsersServiceServer struct {
+// UnimplementedAppointmentServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedAppointmentServiceServer struct {
 }
 
-func (*UnimplementedUsersServiceServer) GetByID(context.Context, *GetByIDReq) (*GetByIDRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetByID not implemented")
+func (*UnimplementedAppointmentServiceServer) GetByDoctorID(context.Context, *GetByDoctrorIDReq) (*GetByDoctorIDRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetByDoctorID not implemented")
 }
 
-func RegisterUsersServiceServer(s *grpc.Server, srv UsersServiceServer) {
-	s.RegisterService(&_UsersService_serviceDesc, srv)
+func RegisterAppointmentServiceServer(s *grpc.Server, srv AppointmentServiceServer) {
+	s.RegisterService(&_AppointmentService_serviceDesc, srv)
 }
 
-func _UsersService_GetByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetByIDReq)
+func _AppointmentService_GetByDoctorID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByDoctrorIDReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServiceServer).GetByID(ctx, in)
+		return srv.(AppointmentServiceServer).GetByDoctorID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/appointmentsService.UsersService/GetByID",
+		FullMethod: "/appointmentsService.AppointmentService/GetByDoctorID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServiceServer).GetByID(ctx, req.(*GetByIDReq))
+		return srv.(AppointmentServiceServer).GetByDoctorID(ctx, req.(*GetByDoctrorIDReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _UsersService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "appointmentsService.UsersService",
-	HandlerType: (*UsersServiceServer)(nil),
+var _AppointmentService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "appointmentsService.AppointmentService",
+	HandlerType: (*AppointmentServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetByID",
-			Handler:    _UsersService_GetByID_Handler,
+			MethodName: "GetByDoctorID",
+			Handler:    _AppointmentService_GetByDoctorID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
