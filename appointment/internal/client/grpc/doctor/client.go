@@ -31,9 +31,15 @@ func (c *Client) GetByID(ctx context.Context, id uuid.UUID) (entity.Doctor, erro
 	if err != nil {
 		return entity.Doctor{}, err
 	}
+
 	rd := r.GetDoctor()
+	doctorID, err := uuid.Parse(rd.GetDoctorID())
+	if err != nil {
+		return entity.Doctor{}, err
+	}
+
 	d := entity.Doctor{
-		ID:         rd.GetDoctorID(),
+		ID:         doctorID,
 		FirstName:  rd.GetFirstName(),
 		LastName:   rd.GetLastName(),
 		Speciality: rd.GetSpeciality(),

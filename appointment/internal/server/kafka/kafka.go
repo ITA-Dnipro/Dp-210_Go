@@ -62,10 +62,10 @@ func (k *Kafka) SendAppointment(a *entity.Appointment) error {
 	return k.send(AppoinmentTopic, a)
 }
 func (k *Kafka) SendBill(a *entity.Appointment) error {
-	return k.send(AppoinmentTopic, a)
+	return k.send(BillTopic, a)
 }
 func (k *Kafka) SendNotification(a *entity.Appointment) error {
-	return k.send(AppoinmentTopic, a)
+	return k.send(NotificationTopic, a)
 }
 
 func (k *Kafka) on(topic string, handler fnHandler) error {

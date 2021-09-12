@@ -1,21 +1,15 @@
 package grpc
 
 import (
-	"context"
 	"fmt"
 	"net"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/config"
-	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/grpc/appointment"
-	appointmentsService "github.com/ITA-Dnipro/Dp-210_Go/appointment/proto/appointments"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-type Usecase interface {
-	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
-}
 type Server struct {
 	srv    *grpc.Server
 	cfg    config.Config
@@ -23,10 +17,9 @@ type Server struct {
 }
 
 // NewGRPCServer create grpc server.
-func NewGRPCServer(cfg config.Config, uc Usecase, logger *zap.Logger) *Server {
+func NewGRPCServer(cfg config.Config, uc appointment.Usecase, logger *zap.Logger) *Server {
 	grpcServer := grpc.NewServer()
-	as := appointment.NewAppointmentService(uc, logger)
-	appointmentsService.RegisterAppointmentServiceServer(grpcServer, as)
+	appointment.RegisterAppointmentServiceServer(grpcServer, uc, logger)
 	return &Server{srv: grpcServer, cfg: cfg, logger: logger}
 }
 

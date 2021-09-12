@@ -15,9 +15,10 @@ type Appointment struct {
 	To        time.Time `json:"to" readonly:"true"`
 }
 
-type AppointmentFilter struct {
-	DoctorID  *uuid.UUID
-	PatientID *uuid.UUID
-	From      *time.Time
-	To        *time.Time
+type AppointmentList struct {
+	Appointments []Appointment `json:"data"`
+	From         time.Time     `json:"-"`
+	To           time.Time     `json:"-"`
+	Limits       int
+	Cursor       string
 }

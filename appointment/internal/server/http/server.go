@@ -6,19 +6,12 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/config"
-	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	appointmentHandlers "github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/appointment"
+	ah "github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/appointment"
 )
 
-type Usecase interface {
-	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
-	CreateRequest(ctx context.Context, a *entity.Appointment) error
-	Delete(ctx context.Context, id uuid.UUID) error
-}
 type Server struct {
 	srv    *http.Server
 	cfg    config.Config
@@ -26,10 +19,10 @@ type Server struct {
 }
 
 // NewHTTPServer create new http server.
-func NewHTTPServer(cfg config.Config, uc Usecase, logger *zap.Logger) *Server {
+func NewHTTPServer(cfg config.Config, uc ah.Usecase, logger *zap.Logger) *Server {
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Mount("/appointments", appointmentHandlers.NewHandlers(uc, logger))
+		r.Mount("/appointments", ah.NewHandlers(uc, logger))
 	})
 
 	return &Server{srv: &http.Server{

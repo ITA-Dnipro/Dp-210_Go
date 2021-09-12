@@ -5,6 +5,7 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	"github.com/google/uuid"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,35 +16,35 @@ import (
 
 // UsersUsecases represent user usecases.
 type Usecase interface {
-	GetByFilter(ctx context.Context, filter entity.AppointmentFilter) ([]entity.Appointment, error)
+	GetByPatientID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error
 }
 
 // userService gRPC Service
-type appointmentService struct {
+type appointmentServiceServer struct {
 	usecase Usecase
 	logger  *zap.Logger
 }
 
 // NewUserService create new user grpc service.
-func NewAppointmentService(uc Usecase, log *zap.Logger) *appointmentService {
-	return &appointmentService{usecase: uc, logger: log}
+func RegisterAppointmentServiceServer(s *grpc.Server, uc Usecase, log *zap.Logger) {
+	ass := &appointmentServiceServer{usecase: uc, logger: log}
+	as.RegisterAppointmentServiceServer(s, ass)
 }
 
-// Get.
-func (u *appointmentService) GetByDoctorID(ctx context.Context, req *as.GetByDoctrorIDReq) (*as.GetByDoctorIDRes, error) {
+// GetByDoctorID get appointments by doctor id.
+func (u *appointmentServiceServer) GetByDoctorID(ctx context.Context, req *as.GetByDoctrorIDReq) (*as.GetByDoctorIDRes, error) {
 	doctorID, err := uuid.Parse(req.GetDoctorID())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	from := req.GetFrom().AsTime()
-	till := req.GetTill().AsTime()
-
-	f := entity.AppointmentFilter{DoctorID: &doctorID, From: &from, To: &till}
-	a, err := u.usecase.GetByFilter(ctx, f)
-	if err != nil {
+	al := entity.AppointmentList{
+		From: req.GetFrom().AsTime(),
+		To:   req.GetTill().AsTime(),
+	}
+	if err := u.usecase.GetByPatientID(ctx, doctorID, &al); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &as.GetByDoctorIDRes{Appointments: toProtoList(a)}, nil
+	return &as.GetByDoctorIDRes{Appointments: toProtoList(al.Appointments)}, nil
 }
 func toProto(a entity.Appointment) *as.Appointment {
 	return &as.Appointment{
