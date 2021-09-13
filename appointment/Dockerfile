@@ -1,21 +1,18 @@
-# Builder image.
-FROM golang:latest as builder
-RUN mkdir /app
-WORKDIR /app
-RUN mkdir ./bin
-COPY ./ ./
-RUN go build -o ./bin/dp210goapp ./
+# Build the Go Binary.
+FROM golang:1.17-alpine as build_appointment-api
 
-# Production image.
-FROM ubuntu:latest
-RUN mkdir /app
-RUN mkdir /app/migrations
+RUN mkdir -p /service
+WORKDIR /service
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . .
 
-RUN apt-get update -y > /dev/null
-RUN apt-get install -y ca-certificates > /dev/null
-RUN update-ca-certificates --fresh > /dev/null
+RUN go build -o appointment-api 
 
-COPY ./token.json /app
-COPY ./migrations /app/migrations
-COPY ./config.json /app
-COPY --from=builder /app/bin/dp210goapp /app
+FROM alpine:latest
+ARG BUILD_DATE
+ARG VCS_REF
+COPY --from=build_appointment-api /service /service
+WORKDIR /service
+CMD ["./appointment-api"]

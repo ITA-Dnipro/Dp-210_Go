@@ -3,9 +3,12 @@ package appointment
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/customerrors"
@@ -136,7 +139,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (entity.Appointm
 	)
 
 	if err != nil {
-		return entity.Appointment{}, fmt.Errorf("there is no doctors with %s id", id)
+		return entity.Appointment{}, fmt.Errorf("there is no appointments with %s id", id)
 	}
 	return a, nil
 }
@@ -172,7 +175,8 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 func (r *Repository) GetAll(ctx context.Context, al *entity.AppointmentList) error {
 	query := `
 	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
-	FROM appointments`
+	FROM appointments
+	WHERE 1=1`
 	return r.fetchAppointments(ctx, al, query)
 }
 
@@ -200,16 +204,65 @@ func (r *Repository) fetchAppointments(
 	al *entity.AppointmentList,
 	query string, args ...interface{},
 ) error {
+	if al.Cursor != "" {
+		ct, id, err := decodeCursor(al.Cursor)
+		if err != nil {
+			return customerrors.ErrBadParamInput
+		}
+		args = append(args, id)
+		query += ` AND id < $` + strconv.Itoa(len(args))
+		if al.From.Before(ct) {
+			al.From = ct
+		}
+	}
 	if !al.From.IsZero() {
 		args = append(args, al.From)
-		query += ` AND lower(time_range) > $%d` + strconv.Itoa(len(args))
+		query += ` AND lower(time_range) > $` + strconv.Itoa(len(args))
 	}
 	if !al.To.IsZero() {
 		args = append(args, al.To)
-		query += ` AND upper(time_range) < $%d` + strconv.Itoa(len(args))
+		query += ` AND upper(time_range) < $` + strconv.Itoa(len(args))
 	}
-	query += ` ORDER BY lower(time_range)`
+	if al.Limits == 0 {
+		al.Limits = 10
+	}
+	args = append(args, al.Limits)
+	query += ` ORDER BY lower(time_range) LIMIT $` + strconv.Itoa(len(args))
 	var err error
 	al.Appointments, err = r.fetch(ctx, query, args...)
-	return err
+	if err != nil {
+		return err
+	}
+	if len(al.Appointments) == al.Limits {
+		next := al.Appointments[len(al.Appointments)-1]
+		al.Cursor = encodeCursor(next.From, next.ID)
+		return nil
+	}
+	al.Cursor = ""
+	return nil
+}
+
+func decodeCursor(encodedCursor string) (res time.Time, id uuid.UUID, err error) {
+	byt, err := base64.StdEncoding.DecodeString(encodedCursor)
+	if err != nil {
+		return
+	}
+
+	arrStr := strings.Split(string(byt), ",")
+	if len(arrStr) != 2 {
+		err = errors.New("cursor is invalid")
+		return
+	}
+
+	res, err = time.Parse(time.RFC3339Nano, arrStr[0])
+	if err != nil {
+		return
+	}
+	id, err = uuid.Parse(arrStr[1])
+	return
+}
+
+func encodeCursor(t time.Time, uuid uuid.UUID) string {
+	key := fmt.Sprintf("%s,%s", t.Format(time.RFC3339Nano), uuid)
+	return base64.StdEncoding.EncodeToString([]byte(key))
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/customerrors"
 	"github.com/google/uuid"
 )
 
@@ -28,9 +29,9 @@ type DoctorsClient interface {
 
 //Producer represent Kafka producer.
 type Producer interface {
-	SendNotification(a *entity.Appointment) error
+	SendNotification(n interface{}) error
 	SendAppointment(a *entity.Appointment) error
-	SendBill(a *entity.Appointment) error
+	SendBill(b entity.Bill) error
 }
 
 // NewUsecases create appoinments usecases.
@@ -91,7 +92,7 @@ func (uc *Usecases) Delete(ctx context.Context, id uuid.UUID) error {
 
 // Create Add new appointment.
 func (uc *Usecases) Update(ctx context.Context, a *entity.Appointment) error {
-
+	a.To = a.From.Add(time.Minute * 30)
 	if err := uc.ar.Update(ctx, a); err != nil {
 		return fmt.Errorf("creating appointment:%w", err)
 	}
@@ -102,12 +103,27 @@ func (uc *Usecases) Update(ctx context.Context, a *entity.Appointment) error {
 }
 
 // Delete deletes a appointment from storage.
-func (uc *Usecases) DeleteWithBilling(ctx context.Context, a *entity.Appointment) error {
+func (uc *Usecases) SendResult(ctx context.Context, v *entity.Visit) error {
+	a, err := uc.ar.GetByID(ctx, v.AppointmentID)
+	if err != nil {
+		return customerrors.ErrNotFound
+	}
+	v.AppointmentID = a.ID
+	v.DoctorID = a.DoctorID
+	v.PatientID = a.PatientID
 	if err := uc.ar.Delete(ctx, a.ID); err != nil {
 		return fmt.Errorf("deleting appointment:%w", err)
 	}
-	if err := uc.producer.SendBill(a); err != nil {
-		return fmt.Errorf("create bill event")
+	b := entity.Bill{
+		DoctorID:  v.DoctorID,
+		PatientID: v.PatientID,
+		Price:     v.Price,
+	}
+	if err := uc.producer.SendBill(b); err != nil {
+		return fmt.Errorf("send bill events")
+	}
+	if err := uc.producer.SendNotification(v); err != nil {
+		return fmt.Errorf("send bill events")
 	}
 	return nil
 }
