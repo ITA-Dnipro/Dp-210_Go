@@ -1,51 +1,52 @@
 package http
 
 import (
-	"database/sql"
-
-	postgres "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres/doctor"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres/doctor"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/doctor"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
-// NewRouter create http routes.
-func NewRouter(db *sql.DB, logger *zap.Logger) chi.Router {
-	repo := postgres.NewRepository(db)
-	usecase := usecases.NewUsecases(repo)
-	hs := handlers.NewHandlers(usecase, logger)
-	r := chi.NewRouter()
+type Auth interface {
+	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
+	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+	InvalidateToken(userId string) error
+}
 
-	//r.Use(md.LoggingMiddleware)
+// NewRouter create http routes.
+func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap.Logger, md *middleware.Middleware) chi.Router {
+	r := chi.NewRouter()
+	hs := handlers.NewHandlers(usecases, logger)
+	//repo := postgres.NewRepository(db)
+	//usecase := usecases.NewUsecases(repo)
+	//md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
+
+	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) { // perm All
 
 		r.Get("/doctors", hs.GetDoctors)     // GET    /api/v1/doctors
 		r.Get("/doctors/{id}", hs.GetDoctor) // GET    /api/v1/doctors/<id>
 
-		//
-		r.Delete("/doctors/{id}", hs.DeleteDoctor) // DELETE /api/v1/doctors/<id>
-		r.Put("/doctors/{id}", hs.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
-		r.Post("/doctors", hs.CreateDoctor)        // POST	/api/v1/doctors
-		//
+		r.Route("/", func(r chi.Router) {
+			r.Use(md.AuthMiddleware)
+			r.Group(func(r chi.Router) {
+				r.Use(md.RoleOnly(role.Operator, role.Admin)) // perm Admin, Operator
+
+				r.Post("/doctors", hs.CreateDoctor) // POST	/api/v1/doctors
+			})
+			r.Group(func(r chi.Router) { // perm Admin
+				r.Use(md.RoleOnly(role.Admin))
+
+				r.Put("/doctors/{id}", hs.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
+				r.Delete("/doctors/{id}", hs.DeleteDoctor) // DELETE /api/v1/doctors/<id>
+			})
+		})
 	})
-	//~ r.Route("/", func(r chi.Router) {
-	//~ r.Use(md.AuthMiddleware)
-
-	//~ r.Group(func(r chi.Router) {
-	//~ r.Use(md.RoleOnly(role.Operator, role.Admin)) // perm Admin, Operator
-
-	//~ r.Post("/doctors", hs.CreateDoctor) 		  // POST	/api/v1/doctors
-	//~ })
-	//~ r.Group(func(r chi.Router) { 					  // perm Admin
-	//~ r.Use(md.RoleOnly(role.Admin))
-
-	//~ r.Put("/doctors/{id}", hs.UpdateDoctor)       // PUT    /api/v1/doctors/<id>
-	//~ r.Delete("/doctors/{id}", hs.DeleteDoctor)    // DELETE /api/v1/doctors/<id>
-	//~ })
-	//~ })
-	//~ })
 
 	//r.Use(md.LoggingMiddleware)
 	//r.Route("/api/v1", func(r chi.Router) {
