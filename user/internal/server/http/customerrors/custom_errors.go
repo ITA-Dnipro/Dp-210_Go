@@ -3,6 +3,8 @@ package customerrors
 import "errors"
 
 var (
-	NotFound = errors.New("not found")
-	Internal = errors.New("internal")
+	ErrNotFound    = errors.New("not found")
+	ErrInternal    = errors.New("internal")
+	ErrDublication = errors.New("dublication one of the key")
+	ErrForeignKey  = errors.New("foreign key constraint")
 )

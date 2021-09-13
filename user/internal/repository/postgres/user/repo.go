@@ -3,10 +3,14 @@ package user
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/server/http/customerrors"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/user/internal/usecases/user"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 )
 
 var _ usecases.UsersRepository = (*Repository)(nil)
@@ -36,6 +40,10 @@ func (r *Repository) Create(ctx context.Context, u *entity.User) error {
 		u.PasswordHash,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return customerrors.ErrDublication
+		}
 		return fmt.Errorf("store error: %w", err)
 	}
 
@@ -62,6 +70,13 @@ func (r *Repository) Update(ctx context.Context, u *entity.User) error {
 		&u.PermissionRole,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return fmt.Errorf("upadate use:%s%w", err.Error(), customerrors.ErrDublication)
+		}
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
+			return fmt.Errorf("upadate use:%s%w", err.Error(), customerrors.ErrForeignKey)
+		}
 		return fmt.Errorf("update error: %w", err)
 	}
 

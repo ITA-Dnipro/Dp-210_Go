@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	APIHost         string        `env:"API_LISTEN_URL"       env-default:"0.0.0.0:8000"`
+	GRPCHost        string        `env:"GRPC_LISTEN_URL"      env-default:"0.0.0.0:6000"`
 	DebugHost       string        `env:"API_DEBUG_URL"        env-default:"0.0.0.0:4000"`
 	ReadTimeout     time.Duration `env:"API_READ_TIMEOUT"     env-default:"5s"`
 	WriteTimeout    time.Duration `env:"API_WRITE_TIMEOUT"    env-default:"5s"`
