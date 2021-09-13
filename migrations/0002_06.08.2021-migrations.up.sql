@@ -12,9 +12,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS patients (
-   id uuid PRIMARY KEY REFERENCES users (id),
-   first_name varchar(25),
-   last_name varchar(25)
+    id uuid PRIMARY KEY REFERENCES users (id),
+    name varchar(25) NOT NULL,
+    email varchar(25) UNIQUE NOT NULL,
+    gender varchar(25) NOT NULL,
+    age INT NOT NULL,
+    phone varchar(20) UNIQUE NOT NULL,
+    address varchar(150) NOT NULL,
+    disability BOOLEAN NOT NULL,
+    reg_at date NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS doctors (
@@ -36,4 +42,4 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 INSERT INTO roles (name)
-   VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient')
+   VALUES ('admin'), ('operator'), ('viewer'), ('doctor'), ('patient');

@@ -20,6 +20,10 @@ import (
 	handlersDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/doctor"
 	usecasesDoctor "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
 
+	postgresPatientData "github.com/ITA-Dnipro/Dp-210_Go/internal/repository/postgres/patientdata"
+	handlersPD "github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/handlers/patientdata"
+	usecasesPD "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/patientdata"
+
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
@@ -54,11 +58,14 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 	usecaseD := usecasesDoctor.NewUsecases(repoD, repo)
 	hsD := handlersDoctor.NewHandlers(usecaseD, logger)
 
+	repoPD := postgresPatientData.NewRepository(db)
+	usecasePD := usecasesPD.NewUsecases(repoPD, repo)
+	hsPD := handlersPD.NewHandlers(usecasePD, logger)
+
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/login", hs.GetToken) // POST /api/v1/login
-		
 
 		r.Group(func(r chi.Router) {
 			r.Use(md.AuthMiddleware)
@@ -77,10 +84,16 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 			})
 		})
 
-		r.Post("/users", hs.CreateUser)    // POST /api/v1/users
-		r.Get("/doctors", hsD.GetDoctors)  // GET    /api/v1/doctors
+		r.Post("/users", hs.CreateUser)       // POST /api/v1/users
+		r.Get("/doctors", hsD.GetDoctors)     // GET    /api/v1/doctors
 		r.Get("/doctors/{id}", hsD.GetDoctor) // GET /api/v1/doctors/<id>
-		r.Route("/", func(r chi.Router) {  // route with permissions
+
+		r.Route("/patient", func(r chi.Router) {
+			r.Post("/", hsPD.CreatePatientDataFromJSON)    // POST /api/v1/patient/
+			r.Post("/file", hsPD.CreatePatientDataFromCSV) // POST /api/v1/patient/file
+		})
+
+		r.Route("/", func(r chi.Router) { // route with permissions
 			r.Use(md.AuthMiddleware)
 
 			r.Group(func(r chi.Router) { // route with permissions
@@ -89,14 +102,14 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, aut
 				r.Get("/users", hs.GetUsers)     // GET /api/v1/users
 				r.Get("/users/{id}", hs.GetUser) // GET /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
 
-				r.Post("/doctors", hsD.CreateDoctor) 		// POST	/api/v1/doctors
+				r.Post("/doctors", hsD.CreateDoctor) // POST	/api/v1/doctors
 			})
 			r.Group(func(r chi.Router) { // route with permission Admin.
 				r.Use(md.RoleOnly(role.Admin))
 
 				r.Put("/users/{id}", hs.UpdateUser)    // PUT /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
 				r.Delete("/users/{id}", hs.DeleteUser) // DELETE /api/v1/users/6ba7b810-9dad-11d1-80b4-00c04fd430c8
-			
+
 				r.Put("/doctors/{id}", hsD.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
 				r.Delete("/doctors/{id}", hsD.DeleteDoctor) // DELETE /api/v1/doctors/<id>
 			})
