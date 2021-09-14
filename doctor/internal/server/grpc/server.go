@@ -30,5 +30,6 @@ func (s *Server) Serve() error {
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
 	return s.server.Serve(listener)
 }

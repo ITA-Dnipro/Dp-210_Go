@@ -8,7 +8,7 @@ import (
 
 //Config structure holds env variables as tags
 type Config struct {
-	APIHost         string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:8001"`
+	APIHost         string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:8000"`
 	DebugHost       string        `env:"API_DEBUG_URL"          env-default:"0.0.0.0:4000"`
 	GRPCHost        string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:6002"`
 	ReadTimeout     time.Duration `env:"API_READ_TIMEOUT"       env-default:"5s"`

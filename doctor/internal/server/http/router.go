@@ -5,18 +5,19 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/doctor"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
+
+	//"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
-type Auth interface {
-	CreateToken(user auth.UserAuth) (auth.JwtToken, error)
-	ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
-	InvalidateToken(userId string) error
-}
+//~ type Auth interface {
+//~ CreateToken(user auth.UserAuth) (auth.JwtToken, error)
+//~ ValidateToken(t auth.JwtToken) (auth.UserAuth, error)
+//~ InvalidateToken(userId string) error
+//~ }
 
 // NewRouter create http routes.
 func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap.Logger, md *middleware.Middleware) chi.Router {
@@ -26,14 +27,14 @@ func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap
 	//usecase := usecases.NewUsecases(repo)
 	//md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
 
-	r.Use(md.LoggingMiddleware)
+	//r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) { // perm All
 
 		r.Get("/doctors", hs.GetDoctors)     // GET    /api/v1/doctors
 		r.Get("/doctors/{id}", hs.GetDoctor) // GET    /api/v1/doctors/<id>
 
 		r.Route("/", func(r chi.Router) {
-			r.Use(md.AuthMiddleware)
+			//r.Use(md.AuthMiddleware)
 			r.Group(func(r chi.Router) {
 				r.Use(md.RoleOnly(role.Operator, role.Admin)) // perm Admin, Operator
 

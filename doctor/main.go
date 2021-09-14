@@ -1,23 +1,28 @@
 package main
 
 import (
-	"context"
+	//"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
-	cache "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/cache/redis"
+	//"time"
+
+	//cache "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/cache/redis"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres/doctor"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
+
+	//"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 
-	"github.com/go-redis/redis/v8"
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
+	ugc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/users"
+
+	//"github.com/go-redis/redis/v8"
 	"github.com/ilyakaznacheev/cleanenv"
 	"go.uber.org/zap"
 )
@@ -62,32 +67,40 @@ func run(logger *zap.Logger) error {
 		return fmt.Errorf("migration : %w", err)
 	}
 
-	logger.Info("doctor: open redis connection")
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisURL,
-		Password: cfg.RedisPassword,
-		DB:       0,
-	})
+	//~ logger.Info("doctor: open redis connection")
+	//~ rdb := redis.NewClient(&redis.Options{
+	//~ Addr:     cfg.RedisURL,
+	//~ Password: cfg.RedisPassword,
+	//~ DB:       0,
+	//~ })
 
-	logger.Info("doctor: redis health check")
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return fmt.Errorf("connect to redis server: %w", err)
+	//~ logger.Info("doctor: redis health check")
+	//~ if err := rdb.Ping(context.Background()).Err(); err != nil {
+	//~ return fmt.Errorf("connect to redis server: %w", err)
+	//~ }
+
+	//~ tokenExp := 15 * time.Minute
+	//~ //
+	//~ jwtAuth, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, tokenExp, "jwtToken"), tokenExp)
+	//~ if err != nil {
+	//~ return fmt.Errorf("jwt auth: %w", err)
+	//~ }
+
+	logger.Info(fmt.Sprintf("startup appointment client:%s", cfg.APIHost))
+	_, err = agc.NewAppointmentsClient(cfg, logger)
+	if err != nil {
+		return err
 	}
 
-	tokenExp := 15 * time.Minute
-	//
-	jwtAuth, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, tokenExp, "jwtToken"), tokenExp)
+	logger.Info(fmt.Sprintf("startup user client:%s", cfg.GRPCHost))
+	uc, err := ugc.NewUserClient(cfg, logger)
 	if err != nil {
-		return fmt.Errorf("jwt auth: %w", err)
+		return err
 	}
 
 	repo := doctor.NewRepository(db)
-	usecase := usecases.NewUsecases(repo)
-	md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: jwtAuth}
-
-	//r := router.NewRouter(repo, usecase, logger, md)
-	//logger.Info(fmt.Sprintf("startup grpc server:%s", cfg.GRPCHost))
-	// grpcServer :=
+	usecase := usecases.NewUsecases(repo, uc)
+	md := &middleware.Middleware{Logger: logger, UserUC: usecase}
 
 	errChan := make(chan error)
 	server.RunServers(cfg, repo, usecase, md, logger, errChan)

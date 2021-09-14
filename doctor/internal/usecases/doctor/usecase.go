@@ -2,9 +2,12 @@ package doctor
 
 import (
 	"context"
+	"fmt"
 	_ "fmt"
 
+	ugc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/users"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 	_ "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 )
 
@@ -24,33 +27,35 @@ type DoctorsRepository interface {
 }
 
 // NewUsecases create new doctor usecases.
-func NewUsecases(dr DoctorsRepository /*, ur UsersRepository*/) *Usecases {
+func NewUsecases(dr DoctorsRepository, uc ugc.Client) *Usecases {
 	return &Usecases{
-		dr: dr,
+		dr:  dr,
+		ugc: uc,
 		//	ur: ur,
 	}
 }
 
 // Usecases represent a doctor usecases.
 type Usecases struct {
-	dr DoctorsRepository
-	ur UsersRepository
+	dr  DoctorsRepository
+	ugc ugc.Client
 }
 
 // Create Add new doctor
 func (uc *Usecases) Create(ctx context.Context, d *entity.Doctor) error {
-	//user, err := uc.ur.GetByID(ctx, d.ID)
-	//if err != nil {
-	//	return fmt.Errorf("get user by %s id: %w", d.ID, err)
-	//}
-	//if user.PermissionRole != role.Viewer {
-	//	return fmt.Errorf("user alredy registered as %s", user.PermissionRole)
-	//}
-	//user.PermissionRole = role.Doctor
-	//if err := uc.ur.Update(ctx, &user); err != nil {
-	//	return fmt.Errorf("update user: %w", err)
-	//}
 
+	user, err := uc.ugc.GetByID(ctx, d.ID) //Call client
+	if err != nil {
+		return fmt.Errorf("get user by %s id: %w", d.ID, err)
+	}
+
+	if user.PermissionRole != role.Viewer {
+		return fmt.Errorf("user alredy registered as %s", user.PermissionRole)
+	}
+	user.PermissionRole = role.Doctor
+	if err := uc.ugc.Update(ctx, &user); err != nil { //Call client
+		return fmt.Errorf("update user: %w", err)
+	}
 	return uc.dr.Create(ctx, d)
 }
 
