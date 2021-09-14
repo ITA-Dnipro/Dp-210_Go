@@ -54,7 +54,7 @@ func (u *userServiceServer) Create(ctx context.Context, req *us.CreateReq) (*us.
 		}
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &us.CreateRes{User: &us.User{UserID: user.ID, Name: user.Name, Email: user.Email, Role: string(user.PermissionRole)}}, nil
+	return &us.CreateRes{User: toProto(user)}, nil
 }
 
 // Update update user.
@@ -79,7 +79,7 @@ func (u *userServiceServer) Update(ctx context.Context, req *us.UpdateReq) (*us.
 		}
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &us.UpdateRes{User: &us.User{UserID: user.ID, Name: user.Name, Email: user.Email, Role: string(user.PermissionRole)}}, nil
+	return &us.UpdateRes{User: toProto(user)}, nil
 }
 
 // Update update user.
@@ -88,5 +88,14 @@ func (u *userServiceServer) GetByID(ctx context.Context, req *us.GetByIDReq) (*u
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &us.GetByIDRes{User: &us.User{UserID: user.ID, Name: user.Name, Email: user.Email, Role: string(user.PermissionRole)}}, nil
+	return &us.GetByIDRes{User: toProto(user)}, nil
+}
+
+func toProto(u entity.User) *us.User {
+	return &us.User{
+		UserID: u.ID,
+		Name:   u.Name,
+		Email:  u.Email,
+		Role:   string(u.PermissionRole),
+	}
 }

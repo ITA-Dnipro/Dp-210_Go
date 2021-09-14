@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
    name varchar(25) UNIQUE NOT NULL,
    email varchar(25) UNIQUE NOT NULL,
    password_hash text NOT NULL,
-   role varchar REFERENCES roles (name)
+   role varchar REFERENCES roles (name),
+   created_at timestamptz DEFAULT Now()
 );
 
 INSERT INTO roles (name)

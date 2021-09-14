@@ -3,8 +3,12 @@ package user
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/server/http/customerrors"
@@ -137,11 +141,10 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (entity.User,
 }
 
 // GetAll get all users.
-func (r *Repository) GetAll(ctx context.Context) (res []entity.User, err error) {
-	query := `SELECT id, name, email, role FROM users ORDER BY role`
-	rows, err := r.storage.QueryContext(ctx, query)
+func (r *Repository) fetch(ctx context.Context, query string, args ...interface{}) (res []entity.User, ct time.Time, err error) {
+	rows, err := r.storage.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("query error: %w", err)
+		return nil, time.Time{}, fmt.Errorf("query error: %w", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -151,15 +154,73 @@ func (r *Repository) GetAll(ctx context.Context) (res []entity.User, err error) 
 			&u.Name,
 			&u.Email,
 			&u.PermissionRole,
+			&ct,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("rows scan error: %w", err)
+			return nil, time.Time{}, fmt.Errorf("rows scan error: %w", err)
 		}
 		res = append(res, u)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("encountered during iteration %w", err)
+		return nil, time.Time{}, fmt.Errorf("encountered during iteration %w", err)
 	}
+
 	return
+}
+
+// GetAll get all users.
+func (r *Repository) GetAll(ctx context.Context, ul *entity.UserList) error {
+	query := `SELECT id, name, email, role, created_at FROM users`
+	args := make([]interface{}, 0)
+	if ul.Cursor != "" {
+		ct, id, err := decodeCursor(ul.Cursor)
+		if err != nil {
+			return customerrors.ErrCursor
+		}
+		query += ` WHERE ($1, $2) > (created_at,id)`
+		args = append(args, ct, id)
+	}
+	if ul.Limit == 0 {
+		ul.Limit = 10
+	}
+	args = append(args, ul.Limit)
+	query += ` ORDER BY created_at DESC LIMIT $` + strconv.Itoa(len(args))
+	users, ct, err := r.fetch(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	ul.Users = users
+	if len(users) == ul.Limit {
+		ul.Cursor = encodeCursor(ct, users[len(users)-1].ID)
+		return nil
+	}
+
+	ul.Cursor = ""
+	return nil
+}
+
+func decodeCursor(encodedCursor string) (res time.Time, id string, err error) {
+	byt, err := base64.StdEncoding.DecodeString(encodedCursor)
+	if err != nil {
+		return
+	}
+
+	arrStr := strings.Split(string(byt), ",")
+	if len(arrStr) != 2 {
+		err = errors.New("cursor is invalid")
+		return
+	}
+
+	res, err = time.Parse(time.RFC3339Nano, arrStr[0])
+	if err != nil {
+		return
+	}
+	id = arrStr[1]
+	return
+}
+
+func encodeCursor(t time.Time, uuid string) string {
+	key := fmt.Sprintf("%s,%s", t.Format(time.RFC3339Nano), uuid)
+	return base64.StdEncoding.EncodeToString([]byte(key))
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/server/http/customerrors"
@@ -26,10 +27,9 @@ type NewUser struct {
 type Usecase interface {
 	Create(ctx context.Context, u *entity.User) error
 	Update(ctx context.Context, u *entity.User) error
-	GetByID(ctx context.Context, id string) (entity.User, error)
-	GetAll(ctx context.Context) ([]entity.User, error)
 	Delete(ctx context.Context, id string) error
-	Authenticate(ctx context.Context, email, password string) (entity.User, error)
+	GetAll(ctx context.Context, ul *entity.UserList) error
+	GetByID(ctx context.Context, id string) (entity.User, error)
 }
 
 const idKey = "id"
@@ -54,13 +54,24 @@ func NewUserHandlers(uc Usecase, logger *zap.Logger) *chi.Mux {
 
 // GetUsers Get all users.
 func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.usecase.GetAll(r.Context())
-	if err != nil {
+	var err error
+	query := r.URL.Query()
+	ul := entity.UserList{
+		Cursor: query.Get("cursor"),
+	}
+	if query.Has("limit") {
+		if ul.Limit, err = strconv.Atoi(query.Get("limit")); err != nil {
+			h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
+			return
+		}
+	}
+
+	if err := h.usecase.GetAll(r.Context(), &ul); err != nil {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
 
-	h.render(w, users)
+	h.render(w, ul)
 }
 
 // GetUser Get single user by id.
