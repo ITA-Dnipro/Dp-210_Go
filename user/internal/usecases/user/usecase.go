@@ -15,7 +15,7 @@ type UsersRepository interface {
 	Create(ctx context.Context, u *entity.User) error
 	Update(ctx context.Context, u *entity.User) error
 	GetByID(ctx context.Context, id string) (entity.User, error)
-	GetAll(ctx context.Context) ([]entity.User, error)
+	GetAll(ctx context.Context, ul *entity.UserList) error
 	Delete(ctx context.Context, id string) error
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
 }
@@ -69,6 +69,18 @@ func (uc *Usecases) GetRoleByID(ctx context.Context, id string) (role.Role, erro
 }
 
 // GetAll get all users.
-func (uc *Usecases) GetAll(ctx context.Context) (res []entity.User, err error) {
-	return uc.repo.GetAll(ctx)
+func (uc *Usecases) GetAll(ctx context.Context, ul *entity.UserList) error {
+	return uc.repo.GetAll(ctx, ul)
+}
+
+// Authenticate user by email and password.
+func (uc *Usecases) Authenticate(ctx context.Context, email, password string) (entity.User, error) {
+	u, err := uc.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return entity.User{}, fmt.Errorf("authenticate get user by email:%w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
+		return entity.User{}, fmt.Errorf("authentication failed:%w", err)
+	}
+	return u, nil
 }
