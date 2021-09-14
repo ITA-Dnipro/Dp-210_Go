@@ -8,14 +8,16 @@ import (
 
 //Config structure holds env variables as tags
 type Config struct {
-	APIHost         string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:8000"`
-	DebugHost       string        `env:"API_DEBUG_URL"          env-default:"0.0.0.0:4000"`
-	GRPCHost        string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:6002"`
-	ReadTimeout     time.Duration `env:"API_READ_TIMEOUT"       env-default:"5s"`
-	WriteTimeout    time.Duration `env:"API_WRITE_TIMEOUT"      env-default:"5s"`
-	ShutdownTimeout time.Duration `env:"API_SHUTDOWN_TIMEOUT"   env-default:"5s"`
-	RedisURL        string        `env:"REDIS_URL"              env-default:"localhost:6379"`
-	RedisPassword   string        `env:"REDIS_PASSWORD"         env-default:""`
+	APIHost               string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:8002"`
+	DebugHost             string        `env:"API_DEBUG_URL"          env-default:"0.0.0.0:4002"`
+	GRPCHost              string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:6002"`
+	UserGRPCClient        string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:6000"`
+	AppointmentGRPCClient string        `env:"API_LISTEN_URL"         env-default:"0.0.0.0:6001"`
+	ReadTimeout           time.Duration `env:"API_READ_TIMEOUT"       env-default:"5s"`
+	WriteTimeout          time.Duration `env:"API_WRITE_TIMEOUT"      env-default:"5s"`
+	ShutdownTimeout       time.Duration `env:"API_SHUTDOWN_TIMEOUT"   env-default:"5s"`
+	RedisURL              string        `env:"REDIS_URL"              env-default:"localhost:6379"`
+	RedisPassword         string        `env:"REDIS_PASSWORD"         env-default:""`
 
 	Postgres postgres.Config
 }

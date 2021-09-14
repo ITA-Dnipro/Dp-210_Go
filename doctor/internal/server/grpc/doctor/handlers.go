@@ -27,8 +27,9 @@ func (h *Handlers) GetByID(ctx context.Context, req *ds.GetByIDReq) (*ds.GetByID
 	if err != nil {
 		return nil, err
 	}
+
 	doctorGRPC := &ds.Doctor{
-		DoctorID:   doctor.ID,
+		DoctorID:   doctor.ID.String(),
 		FirstName:  doctor.FirstName,
 		LastName:   doctor.LastName,
 		Speciality: doctor.Speciality,

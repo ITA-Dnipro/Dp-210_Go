@@ -19,7 +19,7 @@ type Client struct {
 }
 
 func NewUserClient(cfg config.Config, logger *zap.Logger) (*Client, error) {
-	conn, err := grpc.Dial(cfg.GRPCHost,
+	conn, err := grpc.Dial(cfg.UserGRPCClient,
 		grpc.FailOnNonTempDialError(true),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),

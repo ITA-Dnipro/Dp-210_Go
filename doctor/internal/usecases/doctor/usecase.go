@@ -27,7 +27,7 @@ type DoctorsRepository interface {
 }
 
 // NewUsecases create new doctor usecases.
-func NewUsecases(dr DoctorsRepository, uc ugc.Client) *Usecases {
+func NewUsecases(dr DoctorsRepository, uc *ugc.Client) *Usecases {
 	return &Usecases{
 		dr:  dr,
 		ugc: uc,
@@ -38,7 +38,7 @@ func NewUsecases(dr DoctorsRepository, uc ugc.Client) *Usecases {
 // Usecases represent a doctor usecases.
 type Usecases struct {
 	dr  DoctorsRepository
-	ugc ugc.Client
+	ugc *ugc.Client
 }
 
 // Create Add new doctor

@@ -19,7 +19,6 @@ import (
 	//"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 
-	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
 	ugc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/users"
 
 	//"github.com/go-redis/redis/v8"
@@ -67,30 +66,11 @@ func run(logger *zap.Logger) error {
 		return fmt.Errorf("migration : %w", err)
 	}
 
-	//~ logger.Info("doctor: open redis connection")
-	//~ rdb := redis.NewClient(&redis.Options{
-	//~ Addr:     cfg.RedisURL,
-	//~ Password: cfg.RedisPassword,
-	//~ DB:       0,
-	//~ })
-
-	//~ logger.Info("doctor: redis health check")
-	//~ if err := rdb.Ping(context.Background()).Err(); err != nil {
-	//~ return fmt.Errorf("connect to redis server: %w", err)
-	//~ }
-
-	//~ tokenExp := 15 * time.Minute
-	//~ //
-	//~ jwtAuth, err := auth.NewJwtAuth(cache.NewSessionCache(rdb, tokenExp, "jwtToken"), tokenExp)
-	//~ if err != nil {
-	//~ return fmt.Errorf("jwt auth: %w", err)
-	//~ }
-
-	logger.Info(fmt.Sprintf("startup appointment client:%s", cfg.APIHost))
-	_, err = agc.NewAppointmentsClient(cfg, logger)
-	if err != nil {
-		return err
-	}
+	//	logger.Info(fmt.Sprintf("startup appointment client:%s", cfg.APIHost))
+	//	_, err = agc.NewAppointmentsClient(cfg, logger)
+	//	if err != nil {
+	//		return err
+	//	}
 
 	logger.Info(fmt.Sprintf("startup user client:%s", cfg.GRPCHost))
 	uc, err := ugc.NewUserClient(cfg, logger)

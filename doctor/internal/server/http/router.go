@@ -2,7 +2,6 @@ package http
 
 import (
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres/doctor"
-	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
 	handlers "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/doctor"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
 
@@ -30,23 +29,11 @@ func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap
 	//r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) { // perm All
 
-		r.Get("/doctors", hs.GetDoctors)     // GET    /api/v1/doctors
-		r.Get("/doctors/{id}", hs.GetDoctor) // GET    /api/v1/doctors/<id>
-
-		r.Route("/", func(r chi.Router) {
-			//r.Use(md.AuthMiddleware)
-			r.Group(func(r chi.Router) {
-				r.Use(md.RoleOnly(role.Operator, role.Admin)) // perm Admin, Operator
-
-				r.Post("/doctors", hs.CreateDoctor) // POST	/api/v1/doctors
-			})
-			r.Group(func(r chi.Router) { // perm Admin
-				r.Use(md.RoleOnly(role.Admin))
-
-				r.Put("/doctors/{id}", hs.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
-				r.Delete("/doctors/{id}", hs.DeleteDoctor) // DELETE /api/v1/doctors/<id>
-			})
-		})
+		r.Get("/doctors", hs.GetDoctors)           // GET    /api/v1/doctors
+		r.Get("/doctors/{id}", hs.GetDoctor)       // GET    /api/v1/doctors/<id>
+		r.Post("/doctors", hs.CreateDoctor)        // POST	/api/v1/doctors
+		r.Put("/doctors/{id}", hs.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
+		r.Delete("/doctors/{id}", hs.DeleteDoctor) // DELETE /api/v1/doctors/<id>
 	})
 
 	//r.Use(md.LoggingMiddleware)
