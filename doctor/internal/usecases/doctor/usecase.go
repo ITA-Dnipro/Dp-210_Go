@@ -71,6 +71,7 @@ func (uc *Usecases) Delete(ctx context.Context, id string) error {
 
 // GetByID get single doctor by id.
 func (uc *Usecases) GetByID(ctx context.Context, id string) (entity.Doctor, error) {
+	fmt.Println("test_usecasess")
 	return uc.dr.GetByID(ctx, id)
 }
 

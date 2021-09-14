@@ -36,6 +36,5 @@ func (h *Handlers) GetByID(ctx context.Context, req *ds.GetByIDReq) (*ds.GetByID
 		StartAt:    timestamppb.New(doctor.StartAt),
 		EndAt:      timestamppb.New(doctor.EndAt),
 	}
-
 	return &ds.GetByIDRes{Doctor: doctorGRPC}, nil
 }

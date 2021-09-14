@@ -95,7 +95,7 @@ func (h *Handlers) UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a doctor", w)
 		return
 	}
-	convertedID, err := uuid.FromBytes([]byte(id))
+	convertedID, err := uuid.Parse(id) //uuid.FromBytes([]byte(id))
 	if err != nil {
 		h.writeErrorResponse(http.StatusBadRequest, "wrong id in request", w)
 		return
