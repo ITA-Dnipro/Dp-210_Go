@@ -21,6 +21,7 @@ import (
 type Auth interface {
 	CreateToken(user usecase.UserAuth) (usecase.JwtToken, error)
 	InvalidateToken(userId string) error
+	ValidateToken(t usecase.JwtToken) (usecase.UserAuth, error)
 }
 
 func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client, auth Auth) (chi.Router, error) {
@@ -28,7 +29,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 
 	mailSender := mail.NewPasswordCodeSender(gmail)
 
-	md := &middleware.Middleware{Logger: logger}
+	md := &middleware.Middleware{Logger: logger, Auth: auth}
 
 	cfg := config.GetConfig()
 	exp := time.Duration(cfg.RestoreCodeExpirationMillis) * time.Millisecond
