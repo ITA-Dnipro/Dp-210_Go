@@ -17,15 +17,15 @@ import (
 )
 
 type Config struct {
-	Host         string        `env:"POSTGRES_HOST"          env-default:"0.0.0.0:5432"`
-	Name         string        `env:"POSTGRES_DATABASE"      env-default:"users"`
-	User         string        `env:"POSTGRES_USER"          env-default:"postgres"`
-	Password     string        `env:"POSTGRES_PASSWORD"      env-default:"dp210go"`
-	PoolSize     int           `env:"POSTGRES_POOL_SIZE"     env-default:"10"`
-	MaxRetries   int           `env:"POSTGRES_MAX_RETRIES"   env-default:"5"`
-	ReadTimeout  time.Duration `env:"POSTGRES_READ_TIMEOUT"  env-default:"10s"`
-	WriteTimeout time.Duration `env:"POSTGRES_WRITE_TIMEOUT" env-default:"10s"`
-	DisableTLS   bool          `env:"POSTGRES_DISABLE_TLS"   env-default:"true"`
+	Host         string        `envconfig:"POSTGRES_HOST"          default:"0.0.0.0:5432"`
+	Name         string        `envconfig:"POSTGRES_DATABASE"      default:"appointments"`
+	User         string        `envconfig:"POSTGRES_USER"          default:"postgres"`
+	Password     string        `envconfig:"POSTGRES_PASSWORD"      default:"secret"`
+	PoolSize     int           `envconfig:"POSTGRES_POOL_SIZE"     default:"10"`
+	MaxRetries   int           `envconfig:"POSTGRES_MAX_RETRIES"   default:"5"`
+	ReadTimeout  time.Duration `envconfig:"POSTGRES_READ_TIMEOUT"  default:"10s"`
+	WriteTimeout time.Duration `envconfig:"POSTGRES_WRITE_TIMEOUT" default:"10s"`
+	DisableTLS   bool          `envconfig:"POSTGRES_DISABLE_TLS"   default:"true"`
 }
 
 func (cfg *Config) String() string {

@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/repository/postgres"
-	router "github.com/ITA-Dnipro/Dp-210_Go/user/internal/server/http"
+	"github.com/ITA-Dnipro/Dp-210_Go/user/internal/server"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -34,7 +33,7 @@ func run(logger *zap.Logger) error {
 	var cfg config.Config
 	err := cleanenv.ReadEnv(&cfg)
 	if err != nil {
-		log.Fatal(fmt.Errorf("read env: %w", err))
+		return fmt.Errorf("read env: %w", err)
 	}
 	logger.Info("user: Initializing database support")
 	db, err := postgres.Open(cfg.Postgres)
@@ -42,16 +41,12 @@ func run(logger *zap.Logger) error {
 		return fmt.Errorf("connecting to db: %w", err)
 	}
 	defer func() {
-		log.Printf("user: Database Stopping")
+		logger.Info("user: Database Stopping")
 		db.Close()
 	}()
 	err = postgres.MigrateUp(migrationsPath, cfg.Postgres)
 	if err != nil {
-		log.Fatal(fmt.Errorf("db migrations: %w", err))
 		return fmt.Errorf("migrations db: %w", err)
 	}
-	r := router.NewRouter(db, logger)
-	// Start server
-	logger.Info("user: Initializing API support", zap.String("host", cfg.APIHost))
-	return http.ListenAndServe(cfg.APIHost, r)
+	return server.Serve(cfg, db, logger)
 }
