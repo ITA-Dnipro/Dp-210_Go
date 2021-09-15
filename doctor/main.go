@@ -72,7 +72,7 @@ func run(logger *zap.Logger) error {
 	//		return err
 	//	}
 
-	logger.Info(fmt.Sprintf("startup user client:%s", cfg.GRPCHost))
+	logger.Info(fmt.Sprintf("startup user client:%s", cfg.UserGRPCClient))
 	uc, err := ugc.NewUserClient(cfg, logger)
 	if err != nil {
 		return err
