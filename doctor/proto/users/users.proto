@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+// protoc --go_out=plugins=grpc:. *.proto
+
+package usersService;
+option go_package = ".;usersService";
+
+message User {
+  string UserID = 1;
+  string Name = 2;
+  string Email = 3;
+  string Role = 4;
+}
+
+message Empty {}
+
+message CreateReq {
+  string Name = 1;
+  string Email = 2;
+  string Role = 3;
+  string Password = 4;
+}
+
+message CreateRes { User User = 1; }
+
+message UpdateReq {
+  string UserID = 1;
+  string Name = 2;
+  string Email = 3;
+  string Role = 4;
+}
+
+message UpdateRes { User User = 1; }
+
+message GetByIDReq { string UserID = 1; }
+
+message GetByIDRes { User User = 1; }
+
+service UsersService {
+  rpc Create(CreateReq) returns (CreateRes) {}
+  rpc Update(UpdateReq) returns (UpdateRes) {}
+  rpc GetByID(GetByIDReq) returns (GetByIDRes) {}
+}

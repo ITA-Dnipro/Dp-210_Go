@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/customerrors"
+	"github.com/google/uuid"
 
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
@@ -82,7 +83,7 @@ func (h *Handlers) CreateDoctor(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("doctor has been created", zap.String(idKey, d.ID))
+	h.logger.Info("doctor has been created", zap.String(idKey, d.ID.String()))
 	h.render(w, d)
 }
 
@@ -94,7 +95,12 @@ func (h *Handlers) UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a doctor", w)
 		return
 	}
-	d.ID = id
+	convertedID, err := uuid.Parse(id) //uuid.FromBytes([]byte(id))
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "wrong id in request", w)
+		return
+	}
+	d.ID = convertedID
 	if ok := isRequestValid(&d); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "doctor data invalid", w)
 		return
