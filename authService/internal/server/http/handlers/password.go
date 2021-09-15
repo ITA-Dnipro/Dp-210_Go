@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
@@ -17,6 +18,7 @@ func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Reques
 	}
 
 	if _, err := h.paswCases.SendRestorePasswordCode(r.Context(), req.Email); err != nil {
+		h.logger.Warn(fmt.Sprintf("http: send restore code: %v", err))
 		h.writeErrorResponse(http.StatusAccepted, requestFailed, w)
 		return
 	}

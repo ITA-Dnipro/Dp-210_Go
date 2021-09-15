@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -38,8 +39,8 @@ func (md *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		res, err := md.grpcClient.Validate(r.Context(), &proto.Token{Token: t})
 		if err != nil {
 
-			md.Logger.Warn("could not validate token via grpc")
-			w.WriteHeader(int(res.StatusCode))
+			md.Logger.Warn(fmt.Sprintf("could not validate token via grpc %v", err))
+			w.WriteHeader(500)
 			return
 		}
 

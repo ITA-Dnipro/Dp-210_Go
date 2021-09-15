@@ -1,5 +1,5 @@
 {
-    "auth_service_address" : "auth:8002",
+    "auth_service_address" : "auth:8001",
 
     
     "web":{
