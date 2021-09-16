@@ -1,14 +1,10 @@
 package entity
 
-import (
-	"time"
-
-	"github.com/google/uuid"
-)
+import "time"
 
 // Doctor struct (Model) and request
 type Doctor struct {
-	ID         uuid.UUID `json:"id" validate:"required"`
+	ID         string    `json:"id" validate:"required"`
 	FirstName  string    `json:"name" validate:"required"`
 	LastName   string    `json:"last_name" validate:"omitempty"`
 	Speciality string    `json:"speciality" validate:"required"`

@@ -5,9 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
-	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
-	"github.com/google/uuid"
+	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
+	usecases "github.com/ITA-Dnipro/Dp-210_Go/internal/usecases/doctor"
 )
 
 var _ usecases.DoctorsRepository = (*Repository)(nil)
@@ -104,25 +103,17 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 
 // GetByID get single doctor by id.
 func (r *Repository) GetByID(ctx context.Context, id string) (entity.Doctor, error) {
-	query := `SELECT  first_name, last_name, speciality, start_at, end_at FROM doctors WHERE id = $1`
+	query := `SELECT id, first_name, last_name, speciality, start_at, end_at FROM doctors WHERE id = $1`
 	d := entity.Doctor{}
-
-	convertedID, err := uuid.Parse(id) //uuid.FromBytes([]byte(id))
-	if err != nil {
-		return entity.Doctor{}, fmt.Errorf("parsing id: %w", err)
-	}
-	d.ID = convertedID
-
-	//d.ID = id
-	err = r.storage.QueryRowContext(ctx, query, id).Scan(
+	d.ID = id
+	err := r.storage.QueryRowContext(ctx, query, id).Scan(
+		&d.ID,
 		&d.FirstName,
 		&d.LastName,
 		&d.Speciality,
 		&d.StartAt,
 		&d.EndAt,
 	)
-	fmt.Println("test_repo")
-	fmt.Println(err)
 
 	if err != nil {
 		return entity.Doctor{}, fmt.Errorf("there is no doctors with %s id", id)
