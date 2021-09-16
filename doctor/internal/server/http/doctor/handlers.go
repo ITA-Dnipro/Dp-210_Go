@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/server/http/customerrors"
-
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/customerrors"
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -30,11 +32,12 @@ const idKey = "id"
 type Handlers struct {
 	usecases DoctorsUsecases
 	logger   *zap.Logger
+	agc      *agc.Client
 }
 
 // NewHandlers create new doctor handlers.
-func NewHandlers(uc DoctorsUsecases, log *zap.Logger) *Handlers {
-	return &Handlers{usecases: uc, logger: log}
+func NewHandlers(uc DoctorsUsecases, log *zap.Logger, agc *agc.Client) *Handlers {
+	return &Handlers{usecases: uc, logger: log, agc: agc}
 }
 
 // GetDoctors Get all doctors.
@@ -45,7 +48,7 @@ func (h *Handlers) GetDoctors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("ger all request succeeded")
+	h.logger.Info("get all request succeeded")
 	h.render(w, doctors)
 }
 
@@ -82,7 +85,7 @@ func (h *Handlers) CreateDoctor(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	h.logger.Info("doctor has been created", zap.String(idKey, d.ID))
+	h.logger.Info("doctor has been created", zap.String(idKey, d.ID.String()))
 	h.render(w, d)
 }
 
@@ -94,7 +97,12 @@ func (h *Handlers) UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusBadRequest, "can't parse a doctor", w)
 		return
 	}
-	d.ID = id
+	convertedID, err := uuid.Parse(id) //uuid.FromBytes([]byte(id))
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "wrong id in request", w)
+		return
+	}
+	d.ID = convertedID
 	if ok := isRequestValid(&d); !ok {
 		h.writeErrorResponse(http.StatusBadRequest, "doctor data invalid", w)
 		return
@@ -153,4 +161,53 @@ func (h *Handlers) render(w http.ResponseWriter, data interface{}) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "\t")
 	enc.Encode(data)
+}
+
+func (h *Handlers) GetAppointment(w http.ResponseWriter, r *http.Request) {
+	doctor_id := chi.URLParam(r, idKey)
+	var req entity.AppointmentReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "can't parse appointment request", w)
+		return
+	}
+	selectedTime := req.Timestamp
+	t, err := time.Parse(time.RFC3339, selectedTime)
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "can't parse timestamp", w)
+		return
+	}
+
+	var aparr []entity.Appointment
+	aparr, err = h.agc.GetByDoctorID(r.Context(), doctor_id, Bod(t), Eod(t))
+
+	if err != nil {
+		h.writeErrorResponse(http.StatusBadRequest, "error getting dotor by id via grpc", w)
+		return
+	}
+
+	var aparrRes []entity.AppointmentRes
+	doctor, err := h.usecases.GetByID(r.Context(), doctor_id)
+	sessionDuration := time.Minute * 30
+	doctorStart := doctor.StartAt
+	doctorEnd := doctor.EndAt
+
+	for posInTime := doctorStart; posInTime.Add(sessionDuration).Before(doctorEnd); posInTime = posInTime.Add(sessionDuration) {
+		for _, app := range aparr {
+			if posInTime.Add(sessionDuration).Before(app.To) && posInTime.Add(sessionDuration).After(app.From) {
+				posInTime = app.To
+			}
+			aparrRes = append(aparrRes, entity.AppointmentRes{Timestamp: posInTime.String()})
+			break
+		}
+	}
+	h.render(w, aparrRes)
+	h.logger.Info("shown avaliable time blocks")
+}
+
+func Eod(t time.Time) time.Time {
+	return t.Truncate(24 * time.Hour).Add(23 * time.Hour)
+}
+
+func Bod(t time.Time) time.Time {
+	return t.Truncate(24 * time.Hour)
 }
