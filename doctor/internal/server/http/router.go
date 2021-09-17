@@ -6,8 +6,8 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
 
 	//"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
-
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
@@ -19,9 +19,9 @@ import (
 //~ }
 
 // NewRouter create http routes.
-func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap.Logger, md *middleware.Middleware) chi.Router {
+func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap.Logger, md *middleware.Middleware, agc *agc.Client) chi.Router {
 	r := chi.NewRouter()
-	hs := handlers.NewHandlers(usecases, logger)
+	hs := handlers.NewHandlers(usecases, logger, agc)
 	//repo := postgres.NewRepository(db)
 	//usecase := usecases.NewUsecases(repo)
 	//md := &middleware.Middleware{Logger: logger, UserUC: usecase, Auth: auth}
@@ -29,11 +29,12 @@ func NewRouter(repo *doctor.Repository, usecases *usecases.Usecases, logger *zap
 	//r.Use(md.LoggingMiddleware)
 	r.Route("/api/v1", func(r chi.Router) { // perm All
 
-		r.Get("/doctors", hs.GetDoctors)           // GET    /api/v1/doctors
-		r.Get("/doctors/{id}", hs.GetDoctor)       // GET    /api/v1/doctors/<id>
-		r.Post("/doctors", hs.CreateDoctor)        // POST	/api/v1/doctors
-		r.Put("/doctors/{id}", hs.UpdateDoctor)    // PUT    /api/v1/doctors/<id>
-		r.Delete("/doctors/{id}", hs.DeleteDoctor) // DELETE /api/v1/doctors/<id>
+		r.Get("/doctors/appointment/{id}", hs.GetAppointment) // GET /api/v1/doctors/ppointment/<id>
+		r.Get("/doctors", hs.GetDoctors)                      // GET    /api/v1/doctors
+		r.Get("/doctors/{id}", hs.GetDoctor)                  // GET    /api/v1/doctors/<id>
+		r.Post("/doctors", hs.CreateDoctor)                   // POST	/api/v1/doctors
+		r.Put("/doctors/{id}", hs.UpdateDoctor)               // PUT    /api/v1/doctors/<id>
+		r.Delete("/doctors/{id}", hs.DeleteDoctor)            // DELETE /api/v1/doctors/<id>
 	})
 
 	//r.Use(md.LoggingMiddleware)

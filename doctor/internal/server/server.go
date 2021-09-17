@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/repository/postgres/doctor"
-	"go.uber.org/zap"
-
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/grpc"
 	router "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/server/http/middleware"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
+	"go.uber.org/zap"
 )
 
-func RunServers(cfg config.Config, repo *doctor.Repository, usecase *usecases.Usecases, middleware *middleware.Middleware, logger *zap.Logger, errChan chan error) {
-	r := router.NewRouter(repo, usecase, logger, middleware)
+func RunServers(cfg config.Config, repo *doctor.Repository, usecase *usecases.Usecases, middleware *middleware.Middleware, agc *agc.Client, logger *zap.Logger, errChan chan error) {
+	r := router.NewRouter(repo, usecase, logger, middleware, agc)
 	//Create instance of grpc
 	grpcServer := grpc.NewGRPCServer(cfg, usecase, logger)
 

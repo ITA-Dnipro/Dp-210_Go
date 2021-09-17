@@ -19,6 +19,7 @@ import (
 	//"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/service/auth"
 	usecases "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/usecases/doctor"
 
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
 	ugc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/users"
 
 	//"github.com/go-redis/redis/v8"
@@ -66,11 +67,11 @@ func run(logger *zap.Logger) error {
 		return fmt.Errorf("migration : %w", err)
 	}
 
-	//	logger.Info(fmt.Sprintf("startup appointment client:%s", cfg.APIHost))
-	//	_, err = agc.NewAppointmentsClient(cfg, logger)
-	//	if err != nil {
-	//		return err
-	//	}
+	logger.Info(fmt.Sprintf("startup appointment client:%s", cfg.AppointmentGRPCClient))
+	ac, err := agc.NewAppointmentsClient(cfg, logger)
+	if err != nil {
+		return err
+	}
 
 	logger.Info(fmt.Sprintf("startup user client:%s", cfg.UserGRPCClient))
 	uc, err := ugc.NewUserClient(cfg, logger)
@@ -79,10 +80,10 @@ func run(logger *zap.Logger) error {
 	}
 
 	repo := doctor.NewRepository(db)
-	usecase := usecases.NewUsecases(repo, uc)
+	usecase := usecases.NewUsecases(repo, uc, ac)
 	md := &middleware.Middleware{Logger: logger, UserUC: usecase}
 
 	errChan := make(chan error)
-	server.RunServers(cfg, repo, usecase, md, logger, errChan)
+	server.RunServers(cfg, repo, usecase, md, ac, logger, errChan)
 	return <-errChan
 }

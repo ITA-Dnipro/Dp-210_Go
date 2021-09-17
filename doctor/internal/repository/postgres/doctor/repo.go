@@ -121,8 +121,6 @@ func (r *Repository) GetByID(ctx context.Context, id string) (entity.Doctor, err
 		&d.StartAt,
 		&d.EndAt,
 	)
-	fmt.Println("test_repo")
-	fmt.Println(err)
 
 	if err != nil {
 		return entity.Doctor{}, fmt.Errorf("there is no doctors with %s id", id)

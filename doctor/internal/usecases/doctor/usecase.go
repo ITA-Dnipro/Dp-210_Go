@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "fmt"
 
+	agc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/appointments"
 	ugc "github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/client/grpc/users"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/entity"
 	"github.com/ITA-Dnipro/Dp-210_Go/doctor/internal/role"
@@ -27,11 +28,11 @@ type DoctorsRepository interface {
 }
 
 // NewUsecases create new doctor usecases.
-func NewUsecases(dr DoctorsRepository, uc *ugc.Client) *Usecases {
+func NewUsecases(dr DoctorsRepository, uc *ugc.Client, ac *agc.Client) *Usecases {
 	return &Usecases{
 		dr:  dr,
 		ugc: uc,
-		//	ur: ur,
+		agc: ac,
 	}
 }
 
@@ -39,6 +40,7 @@ func NewUsecases(dr DoctorsRepository, uc *ugc.Client) *Usecases {
 type Usecases struct {
 	dr  DoctorsRepository
 	ugc *ugc.Client
+	agc *agc.Client
 }
 
 // Create Add new doctor
@@ -71,7 +73,6 @@ func (uc *Usecases) Delete(ctx context.Context, id string) error {
 
 // GetByID get single doctor by id.
 func (uc *Usecases) GetByID(ctx context.Context, id string) (entity.Doctor, error) {
-	fmt.Println("test_usecasess")
 	return uc.dr.GetByID(ctx, id)
 }
 

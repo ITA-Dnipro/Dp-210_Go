@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+type AppointmentReq struct {
+	//DoctorID  string    `json:"doctor_id"           validate:"required"`
+	UserID    string `json:"user_id" readonly:"true"  validate:"required"`
+	Timestamp string `json:"timestamp"                validate:"required"`
+}
+
+type AppointmentRes struct {
+	Timestamp string `json:"timestamp"                validate:"required"`
+}
+
 type Appointment struct {
 	ID        string    `json:"id" readonly:"true"`
 	DoctorID  string    `json:"doctor_id"           validate:"required"`
