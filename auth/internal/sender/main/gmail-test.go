@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/sender"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/sender"
 )
 
 func main() {

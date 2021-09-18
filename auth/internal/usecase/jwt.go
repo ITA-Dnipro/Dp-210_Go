@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -147,6 +147,6 @@ type AuthClaims struct {
 }
 
 type UserAuth struct {
-	Id   string      `userId`
-	Role entity.Role `userRole`
+	Id   string      `json:"userId"`
+	Role entity.Role `json:"userRole"`
 }

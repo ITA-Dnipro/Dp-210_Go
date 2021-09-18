@@ -2,16 +2,16 @@ package http
 
 import (
 	"database/sql"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
 	"time"
 
-	cache "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/cache/redis"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
+	cache "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/cache/redis"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/repository/postgres"
-	mail "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/sender"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/handlers"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/repository/postgres"
+	mail "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/sender"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/handlers"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"

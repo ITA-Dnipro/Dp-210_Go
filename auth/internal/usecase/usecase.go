@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -68,7 +68,7 @@ func (uc *Usecases) Authenticate(ctx context.Context, pc entity.PasswordCode) (e
 
 	user, err := uc.userRepo.GetByEmail(ctx, pc.Email)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("authService via passw code, get user: %w", err)
+		return entity.User{}, fmt.Errorf("auth via passw code, get user: %w", err)
 	}
 
 	return user, nil

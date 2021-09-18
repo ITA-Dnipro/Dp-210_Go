@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
-	md "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/http/middleware"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 )
 
 func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {

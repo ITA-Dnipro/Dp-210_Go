@@ -4,7 +4,7 @@ RUN mkdir /app
 WORKDIR /app
 RUN mkdir ./bin
 COPY ./ ./
-RUN go build -o ./bin/dp210goapp/authService ./
+RUN go build -o ./bin/dp210goapp/auth ./
 #RUN go build -o ./bin/dp210goapp ./
 
 # Production image.

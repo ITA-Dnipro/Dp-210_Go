@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/grpc/proto"
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/usecase"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/grpc/proto"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"net/http"
 )
 

@@ -23,11 +23,11 @@ services:
     container_name: dp210go_auth
     image: dp210go_auth
     working_dir: /app
-    command: ./authService
+    command: ./auth
     links:
       - redis
     env_file:
-      - ./authService/config.env
+      - auth/config.env
     ports:
       - "127.0.0.1:8001:8000"
       - "127.0.0.1:8002:8001"

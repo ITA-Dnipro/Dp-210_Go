@@ -1,4 +1,4 @@
-module github.com/ITA-Dnipro/Dp-210_Go/authService
+module github.com/ITA-Dnipro/Dp-210_Go/auth
 
 go 1.17
 

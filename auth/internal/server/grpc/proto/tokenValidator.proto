@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/ITA-Dnipro/Dp-210_Go/authService/internal/server/grpc/proto";
+option go_package = "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/grpc/proto";
 
 package proto;
 

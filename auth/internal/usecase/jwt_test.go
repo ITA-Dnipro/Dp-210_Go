@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/authService/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,8 +19,8 @@ func TestCreateValidateToken(t *testing.T) {
 		wait    time.Duration
 		err     bool
 	}{
-		{"1", entity.Viewer, time.Second, time.Second * 2, true},
-		{"2", entity.Operator, time.Second * 2, time.Second, false},
+		{"1", "viewer", time.Second, time.Second * 2, true},
+		{"2", "viewer", time.Second * 2, time.Second, false},
 	}
 	for _, tt := range tts {
 		auth, err := NewJwtAuth(NewMockCache(), tt.expires)
@@ -51,8 +51,8 @@ func TestCreateInvalidateToken(t *testing.T) {
 		err  bool
 		role entity.Role
 	}{
-		{"1", true, entity.Viewer},
-		{"2", true, entity.Viewer},
+		{"1", true, "viewer"},
+		{"2", true, "viewer"},
 	}
 	for _, tt := range tts {
 		auth.Lifetime = time.Second * 10
