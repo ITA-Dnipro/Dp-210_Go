@@ -9,3 +9,7 @@ golang_dp210555
 
 ### to run everything you should use  
 `make upall`  
+
+### to set modules locally 
+run in module   
+`go mod edit -replace github.com/ITA-Dnipro/Dp-210_Go=../../Dp-210_Go`

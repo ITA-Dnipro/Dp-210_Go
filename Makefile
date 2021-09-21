@@ -3,6 +3,7 @@
 # Создать образ для сервиса основного приложения.
 buildimg:
 	docker build -t dp210goimg ./
+	docker build -t dp210go_auth ./authService
 
 # Поднять все сервисы.
 up:
@@ -31,3 +32,4 @@ logsredis:
 # Поднять все с созданием образа для сервиса приложения.
 upall:buildimg
 	docker-compose up -d
+

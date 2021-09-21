@@ -1,4 +1,4 @@
-package auth
+package usecase
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,13 +14,13 @@ import (
 func TestCreateValidateToken(t *testing.T) {
 	tts := []struct {
 		id      string
-		role    role.Role
+		role    entity.Role
 		expires time.Duration
 		wait    time.Duration
 		err     bool
 	}{
-		{"1", role.Viewer, time.Second, time.Second * 2, true},
-		{"2", role.Operator, time.Second * 2, time.Second, false},
+		{"1", "viewer", time.Second, time.Second * 2, true},
+		{"2", "viewer", time.Second * 2, time.Second, false},
 	}
 	for _, tt := range tts {
 		auth, err := NewJwtAuth(NewMockCache(), tt.expires)
@@ -49,10 +49,10 @@ func TestCreateInvalidateToken(t *testing.T) {
 	tts := []struct {
 		id   string
 		err  bool
-		role role.Role
+		role entity.Role
 	}{
-		{"1", true, role.Viewer},
-		{"2", true, role.Viewer},
+		{"1", true, "viewer"},
+		{"2", true, "viewer"},
 	}
 	for _, tt := range tts {
 		auth.Lifetime = time.Second * 10
