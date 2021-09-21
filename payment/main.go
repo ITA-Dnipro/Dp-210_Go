@@ -49,7 +49,7 @@ func main() {
 
 	logger.Info("scheduling kafka produce")
 	scheduler := gocron.NewScheduler(time.UTC)
-	if _, err = scheduler.Every(3).Minute().Do(kafkajob.Produce, ctx, handler); err != nil {
+	if _, err = scheduler.Every(2).Minute().Do(kafkajob.Produce, ctx, handler); err != nil {
 		logger.Error("in func do of the scheduler error", zap.Error(err))
 	}
 	scheduler.StartAsync()
