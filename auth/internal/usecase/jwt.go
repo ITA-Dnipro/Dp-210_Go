@@ -1,4 +1,4 @@
-package auth
+package usecase
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -33,12 +33,6 @@ var (
 )
 
 type JwtToken string
-
-type Cache interface {
-	Get(ctx context.Context, key string) (string, error)
-	Set(ctx context.Context, key, value string) error
-	Del(ctx context.Context, key string) error
-}
 
 type JwtAuth struct {
 	Cache     Cache
@@ -148,11 +142,11 @@ func (auth *JwtAuth) validateInStorage(t JwtToken, userId string) error {
 
 type AuthClaims struct {
 	UserId   string
-	UserRole role.Role
+	UserRole entity.Role
 	jwt.StandardClaims
 }
 
 type UserAuth struct {
-	Id   string
-	Role role.Role
+	Id   string      `json:"userId"`
+	Role entity.Role `json:"userRole"`
 }

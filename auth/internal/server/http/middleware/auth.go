@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/role"
-	"github.com/ITA-Dnipro/Dp-210_Go/internal/service/auth"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 )
 
 type contextKey string
@@ -45,17 +45,17 @@ func UserFromContext(ctx context.Context) (user ReqUser, ok bool) {
 	return user, ok
 }
 
-func tokenfromRequest(r *http.Request) (auth.JwtToken, bool) {
+func tokenfromRequest(r *http.Request) (usecase.JwtToken, bool) {
 	authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
 	if len(authHeader) != 2 {
-		return auth.JwtToken(""), false
+		return usecase.JwtToken(""), false
 	}
 
-	jwtToken := auth.JwtToken(authHeader[1])
+	jwtToken := usecase.JwtToken(authHeader[1])
 	return jwtToken, true
 }
 
 type ReqUser struct {
 	Id   string
-	Role role.Role
+	Role entity.Role
 }
