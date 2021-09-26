@@ -38,6 +38,7 @@ require (
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_golang v1.11.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect

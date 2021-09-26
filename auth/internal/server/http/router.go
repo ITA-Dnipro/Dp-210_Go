@@ -2,8 +2,9 @@ package http
 
 import (
 	"database/sql"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
 	"time"
+
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
 
 	cache "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/cache/redis"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
@@ -16,6 +17,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Auth interface {
@@ -45,6 +48,7 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 
 	r := chi.NewRouter()
 	r.Use(md.LoggingMiddleware)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/login", hs.LogIn)
 
@@ -65,6 +69,8 @@ func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb
 			})
 		})
 	})
+
+	r.Mount("/metrics", promhttp.Handler())
 
 	return r, nil
 }
