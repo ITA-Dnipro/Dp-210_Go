@@ -1,0 +1,15 @@
+// protoc --proto_path=./api my.proto --go_out=plugins=grpc:./api
+syntax = "proto3";
+
+package statistics;
+
+import "google/protobuf/empty.proto";
+
+message DocRequest {
+  bytes docsBytesArr = 1; // []byte
+}
+
+service Stat {
+  rpc DocStat(DocRequest) returns (google.protobuf.Empty){}
+}
+

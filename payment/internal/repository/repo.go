@@ -1,9 +1,9 @@
-package repo
+package repository
 
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/payment/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/entity"
 )
 
 func NewRepository(db *sql.DB) *Repository {
@@ -47,11 +47,14 @@ func (repo *Repository) InsertDataToDb(bill *entity.Bill) error {
 	return nil
 }
 
-//goland:noinspection GoUnhandledErrorResult
-func (repo *Repository) GetAllPatients() (patientsArr []entity.Patient, err error) {
+//goland:noinspection GoUnhandledErrorResult,SqlWithoutWhere
+func (repo *Repository) GetAllDataFromDb() (*entity.DocPat, error) {
+	var docPat entity.DocPat
+
 	query1 := `SELECT * FROM patients;`
 	query2 := `DELETE FROM patients;`
-	query3 := `DELETE FROM doctors;`
+	query3 := `SELECT * FROM doctors;`
+	query4 := `DELETE FROM doctors;`
 
 	tx, err := repo.storage.Begin()
 	if err != nil {
@@ -59,34 +62,56 @@ func (repo *Repository) GetAllPatients() (patientsArr []entity.Patient, err erro
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.Query(query1)
+	// query1 := `SELECT * FROM patients;`
+	patientsRows, err := tx.Query(query1)
 	if err != nil {
 		return nil, fmt.Errorf("query1 error > %s", err)
 	}
-	defer rows.Close()
-	for rows.Next() {
+	defer patientsRows.Close()
+	for patientsRows.Next() {
 		var p entity.Patient
-		if err = rows.Scan(
+		if err = patientsRows.Scan(
 			&p.PatientId,
 			&p.PatientTotal,
 		); err != nil {
 			return nil, fmt.Errorf("rows scan error > %s", err)
 		}
-		patientsArr = append(patientsArr, p)
+		docPat.Patients = append(docPat.Patients, p)
 	}
 
+	// query2 := `DELETE FROM patients;`
 	_, err = tx.Exec(query2)
 	if err != nil {
 		return nil, fmt.Errorf("query2 error > %s", err)
 	}
 
-	_, err = tx.Exec(query3)
+	// query3 := `SELECT * FROM doctors;`
+	doctorsRows, err := tx.Query(query3)
+	if err != nil {
+		return nil, fmt.Errorf("query1 error > %s", err)
+	}
+	defer doctorsRows.Close()
+	for doctorsRows.Next() {
+		var d entity.Doctor
+		if err = doctorsRows.Scan(
+			&d.DoctorId,
+			&d.DoctorTotal,
+		); err != nil {
+			return nil, fmt.Errorf("rows scan error > %s", err)
+		}
+		docPat.Doctors = append(docPat.Doctors, d)
+	}
+
+	// query4 := `DELETE FROM doctors;`
+	_, err = tx.Exec(query4)
 	if err != nil {
 		return nil, fmt.Errorf("query3 error > %s", err)
 	}
 
+	// tx commit!
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("transaction commit error > %s", err)
 	}
-	return
+
+	return &docPat, nil
 }

@@ -4,15 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/payment/handlers"
-	"github.com/ITA-Dnipro/Dp-210_Go/payment/kafkajob"
-	repository "github.com/ITA-Dnipro/Dp-210_Go/payment/repo"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/handlers/kafkahand"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/kafka"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/proto/statistics"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/repository"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-co-op/gocron"
+
+	// This is a database/sql compatibility layer for pgx. pgx can be used as a normal database/sql
+	//driver, but at any time, the native interface can be acquired for more performance or PostgreSQL
+	//specific functionality.
 	_ "github.com/jackc/pgx/v4/stdlib"
+
 	"go.uber.org/zap"
+
+	"google.golang.org/grpc"
 )
 
 const (
@@ -43,19 +52,25 @@ func main() {
 		logger.Fatal("db ping failed", zap.Error(err))
 	}
 
+	conn, err := grpc.Dial(":1235", grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+	statClient := statistics.NewStatClient(conn)
+
 	// DI
 	repo := repository.NewRepository(db)
-	handler := handlers.NewHandler(repo, logger)
+	kafkaHandler := kafkahand.NewHandler(repo, logger, statClient)
 
 	logger.Info("scheduling kafka produce")
 	scheduler := gocron.NewScheduler(time.UTC)
-	if _, err = scheduler.Every(2).Minute().Do(kafkajob.Produce, ctx, handler); err != nil {
+	if _, err = scheduler.Every(1).Minute().Do(kafka.Produce, ctx, kafkaHandler); err != nil {
 		logger.Error("in func do of the scheduler error", zap.Error(err))
 	}
 	scheduler.StartAsync()
 
 	logger.Info("kafka consume starting")
-	go kafkajob.Consume(ctx, handler)
+	go kafka.Consume(ctx, kafkaHandler)
 
 	logger.Fatal("server error", zap.Error(http.ListenAndServe(":1234", nil)))
 }
