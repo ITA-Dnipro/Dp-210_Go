@@ -1,12 +1,12 @@
-package kafkajob
+package kafka
 
 import (
 	"context"
 	"fmt"
-	"github.com/ITA-Dnipro/Dp-210_Go/payment/entity"
-	"github.com/ITA-Dnipro/Dp-210_Go/payment/handlers"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/entity"
+	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/handlers/kafkahand"
 
-	"github.com/segmentio/kafka-go"
+	kafkago "github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
@@ -17,13 +17,13 @@ const (
 	consumerGroup = "bill-group"
 )
 
-var w = kafka.Writer{
-	Addr:  kafka.TCP(broker),
+var w = kafkago.Writer{
+	Addr:  kafkago.TCP(broker),
 	Topic: topicOut,
 }
 
-func Produce(ctx context.Context, h *handlers.Handler) {
-	report, err := h.SendMonthlyReportToTopic()
+func Produce(ctx context.Context, h *kafkahand.Handler) {
+	report, err := h.SendMonthlyReport()
 	if err != nil {
 		h.Logger.Error("send monthly report to topic info >", zap.Error(err))
 		return
@@ -33,7 +33,7 @@ func Produce(ctx context.Context, h *handlers.Handler) {
 		return
 	}
 
-	if err = w.WriteMessages(ctx, kafka.Message{
+	if err = w.WriteMessages(ctx, kafkago.Message{
 		Key:   []byte("to-bill-period"),
 		Value: report,
 	}); err != nil {
@@ -41,11 +41,11 @@ func Produce(ctx context.Context, h *handlers.Handler) {
 		return
 	}
 
-	h.Logger.Info(fmt.Sprintf("sent to kafka > %v", string(report)))
+	h.Logger.Info(fmt.Sprintf("\n>>> SENT TO KAFKA %v\n", string(report)))
 }
 
-func Consume(ctx context.Context, h *handlers.Handler) {
-	var r = kafka.NewReader(kafka.ReaderConfig{
+func Consume(ctx context.Context, h *kafkahand.Handler) {
+	var r = kafkago.NewReader(kafkago.ReaderConfig{
 		Topic:   topic,
 		Brokers: []string{broker},
 		GroupID: consumerGroup,
