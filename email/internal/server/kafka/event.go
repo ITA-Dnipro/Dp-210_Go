@@ -8,6 +8,7 @@ import (
 
 type Email struct {
 	Title    string `json:"title"`
+	Text     string `json:"text"`
 	Receiver string `json:"receiver"`
 }
 
@@ -18,7 +19,8 @@ type EventHandler struct {
 func (h *EventHandler) EmailFromEvent(payload []byte) error {
 	var e Email
 	if err := json.Unmarshal(payload, &e); err != nil {
-		return fmt.Errorf("marshaling appointment:%w", err)
+		return fmt.Errorf("unmarshaling email:%w", err)
 	}
-	return h.Sender.Send(e.Title, "subj", e.Receiver)
+
+	return h.Sender.Send(e.Receiver, e.Title, e.Text)
 }

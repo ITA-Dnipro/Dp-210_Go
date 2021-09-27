@@ -27,6 +27,8 @@ type Config struct {
 	TokenType                   string `json:"token_type" env-default:"jwtToken"`
 	RestoreCodeExpirationMillis int64  `json:"restore_code_expiration_millis" env-default:"300000"`
 	RestoreCodeType             string `json:"restore_code_type" env-default:"restore"`
+
+	KafkaBrokers []string `env:"KAFKA_BROKERS" env-default:"0.0.0.0:9091"`
 }
 
 func (e *Config) DatabaseUrl() (*url.URL, error) {
