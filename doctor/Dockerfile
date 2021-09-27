@@ -1,17 +1,16 @@
-# Builder image.
-FROM golang:latest as builder
-RUN mkdir /app
-WORKDIR /app
-RUN mkdir ./bin
-COPY ./ ./
-RUN go build -o ./bin/dp210goapp_doctor ./
+# Builds binary
+FROM golang as builder
+LABEL stage=compilation
+RUN mkdir /build
+WORKDIR /build
+COPY . .
+RUN go mod download
+RUN CGO_ENABLED=0 go build -tags netgo -a -o doctor-api
+RUN ls
 
-# Production image.
-FROM ubuntu:latest
-RUN mkdir /app
-RUN mkdir /app/migrations
-
-COPY ./token.json /app
-COPY ./sql/migrations /app/migrations
-COPY ./config.json /app
-COPY --from=builder /app/bin/dp210goapp_doctor /app
+# Runs binary
+FROM alpine:latest
+COPY --from=builder /build/sql /sql
+COPY --from=builder /build/doctor-api /
+RUN ls
+CMD [./doctor-api]

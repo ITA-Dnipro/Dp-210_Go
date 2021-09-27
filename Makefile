@@ -2,34 +2,29 @@
 
 # Создать образ для сервиса основного приложения.
 buildimg:
-	docker build -t dp210goimg ./
-	docker build -t dp210go_auth ./authService
-
-# Поднять все сервисы.
+	docker build -t appointment-api ./appointment
+#	docker build -t dp210go_auth    ./auth
+	docker build -t doctor-api      ./doctor
+	docker build -t user-api        ./user
 up:
 	docker-compose up -d
-
-# Остановить все сервисы.
 stop:
 	docker-compose stop
+#cleanjunk:
+#	docker system prune
 
-# Запуск в терминале логов всех сервисов.
-logsall:
-	docker-compose logs -f
 
-# Запуск в терминале лога сервиса приложения.
-logswebapp:
-	docker-compose logs -f webapp
+#logsall:
+#	docker-compose logs -f
+#
+#logswebapp:
+#	docker-compose logs -f webapp
+#
+#logsdb:
+#	docker-compose logs -f db
+#
+#logsredis:
+#	docker-compose logs -f redis
 
-# Запуск в терминале лога сервиса db.
-logsdb:
-	docker-compose logs -f db
-
-# Запуск в терминале лога сервиса redis.
-logsredis:
-	docker-compose logs -f redis
-
-# Поднять все с созданием образа для сервиса приложения.
-upall:buildimg
-	docker-compose up -d
+upall:buildimg up #cleanjunk
 
