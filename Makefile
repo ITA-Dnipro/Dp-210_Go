@@ -2,8 +2,8 @@
 
 # Создать образ для сервиса основного приложения.
 buildimg:
-	docker build -t dp210goimg ./
-	docker build -t dp210go_auth ./authService
+	#docker build -t dp210goimg ./
+	docker build -t dp210go_auth ./auth
 
 # Поднять все сервисы.
 up:

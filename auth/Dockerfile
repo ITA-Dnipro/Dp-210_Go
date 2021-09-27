@@ -19,4 +19,4 @@ RUN update-ca-certificates --fresh > /dev/null
 COPY ./token.json /app
 COPY ./migrations /app/migrations
 COPY ./config.json /app
-COPY --from=builder /app/bin/dp210goapp/authService /app
+COPY --from=builder /app/bin/dp210goapp/auth /app

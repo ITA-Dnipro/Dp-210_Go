@@ -1,23 +1,23 @@
 version: "3.8"
 
 services:
-  webapp:
-    container_name: dp210go_ctr
-    image: dp210goimg
-    working_dir: /app
-    command: ./dp210goapp
-    links:
-      - redis
-    env_file:
-      - ./env/db.env
-      - ./env/webapp.env
-    ports:
-      - "127.0.0.1:8000:8000"
-    depends_on:
-      - redis
-      - db
-    networks:
-      - fullstack
+#  webapp:
+#    container_name: dp210go_ctr
+#    image: dp210goimg
+#    working_dir: /app
+#    command: ./dp210goapp
+#    links:
+#      - redis
+##    env_file:
+##      - ./env/db.env
+##      - ./env/webapp.env
+#    ports:
+#      - "127.0.0.1:8000:8000"
+#    depends_on:
+#      - redis
+#      - db
+#    networks:
+#      - fullstack
 
   auth:
     container_name: dp210go_auth
@@ -50,7 +50,29 @@ services:
       retries: 5
     networks:
       - fullstack
-    
+
+
+  prometheus:
+    container_name: dp210go_prometheus
+    image: prom/prometheus:latest
+    ports:
+      - 9090:9090
+    networks:
+      - fullstack
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
+
+
+  grafana:
+    container_name: dp210go_grafana
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    networks:
+      - fullstack
+
 
   db:
     container_name: dp210go_dbctr
@@ -59,7 +81,7 @@ services:
     ports:
       - 5432:5432
     env_file:
-      - ./env/db.env
+      - ./auth/config.env
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
       interval: 10s
@@ -71,3 +93,6 @@ services:
 networks:
   fullstack:
     driver: bridge
+
+volumes:
+  prometheus-data:
