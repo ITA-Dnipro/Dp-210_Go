@@ -100,6 +100,10 @@ func (k *Kafka) OnAppointment(handler fnHandler) error {
 }
 
 func (k *Kafka) Close() {
-	k.Consumer.Close()
-	k.Producer.Close()
+	if err := k.Consumer.Close(); err != nil {
+		k.logger.Error("could not close consumer: %w", zap.Error(err))
+	}
+	if err := k.Producer.Close(); err != nil {
+		k.logger.Error("could not close producer: %w", zap.Error(err))
+	}
 }

@@ -6,7 +6,10 @@ import (
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/config"
+	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/middleware"
+
 	"github.com/go-chi/chi"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
 	ah "github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/server/http/appointment"
@@ -21,7 +24,9 @@ type Server struct {
 // NewHTTPServer create new http server.
 func NewHTTPServer(cfg config.Config, uc ah.Usecase, logger *zap.Logger) *Server {
 	r := chi.NewRouter()
+	r.Mount("/metrics", promhttp.Handler())
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(middleware.MeasureResponseDuration)
 		r.Mount("/appointments", ah.NewHandlers(uc, logger))
 	})
 
@@ -43,8 +48,10 @@ func (s *Server) GracefulShutdown() {
 	defer cancel()
 
 	if err := s.srv.Shutdown(ctx); err != nil {
-		s.srv.Close()
 		s.logger.Error("could not stop server gracefully: %w", zap.Error(err))
+		if err := s.srv.Close(); err != nil {
+			s.logger.Error("could not close server: %w", zap.Error(err))
+		}
 	}
 	s.logger.Info("http server shutdown")
 }

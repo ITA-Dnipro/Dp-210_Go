@@ -8,9 +8,10 @@ import (
 
 type Config struct {
 	APIHost         string        `envconfig:"API_LISTEN_URL"       default:"0.0.0.0:8001"`
-	GRPCHost        string        `envconfig:"GRPC_LISTEN_URL"      default:"0.0.0.0:6000"`
+	GRPCHost        string        `envconfig:"GRPC_LISTEN_URL"      default:"0.0.0.0:6001"`
 	DebugHost       string        `envconfig:"API_DEBUG_URL"        default:"0.0.0.0:4000"`
 	DocrotGRPCHost  string        `envconfig:"DOCTORS_GRPC_URL"     default:"0.0.0.0:6002"`
+	UserGRPCHost    string        `envconfig:"USERS_GRPC_URL"       default:"0.0.0.0:6000"`
 	KafkaBrokers    []string      `envconfig:"KAFKA_BROKERS"        default:"0.0.0.0:9091"`
 	ReadTimeout     time.Duration `envconfig:"API_READ_TIMEOUT"     default:"5s"`
 	WriteTimeout    time.Duration `envconfig:"API_WRITE_TIMEOUT"    default:"5s"`
