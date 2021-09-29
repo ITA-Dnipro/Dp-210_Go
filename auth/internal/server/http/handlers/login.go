@@ -6,7 +6,16 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"net/http"
+)
+
+var (
+	loginedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "http_logins_total",
+		Help: "The total number of logins",
+	})
 )
 
 func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +42,7 @@ func (h *Handlers) LogIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	loginedTotal.Inc()
 	h.render(w, tkn)
 }
 
