@@ -4,6 +4,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
@@ -53,7 +54,9 @@ func Open(cfg Config) (*sql.DB, error) {
 	}
 	err = db.Ping()
 	if err != nil {
-		db.Close()
+		if err := db.Close(); err != nil {
+			log.Println(err)
+		}
 		return nil, fmt.Errorf("ping db %s : %w", cfg.String(), err)
 	}
 	return db, nil

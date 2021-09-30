@@ -1,73 +1,160 @@
-version: "3.8"
+version: "2.4"
 
 services:
-  webapp:
-    container_name: dp210go_ctr
-    image: dp210goimg
-    working_dir: /app
-    command: ./dp210goapp
-    links:
-      - redis
-    env_file:
-      - ./env/db.env
-      - ./env/webapp.env
+  users-api:
+    container_name: users-api 
+    environment:
+      POSTGRES_HOST: postgres-test:5432
+    image: users-api
+    restart: always
+    command: ./user-api 
     ports:
-      - "127.0.0.1:8000:8000"
+      - 8000:8000 # CRUD API
+      - 6000:6000 # gRPC
+    networks:
+      - shared-network
     depends_on:
-      - redis
       - db
-    networks:
-      - fullstack
+      - zookeeper
+      - kafka1
 
-  auth:
-    container_name: dp210go_auth
-    image: dp210go_auth
-    working_dir: /app
-    command: ./auth
-    links:
-      - redis
-    env_file:
-      - auth/config.env
+  doctors-api:
+    container_name: doctors-api 
+    environment:
+      POSTGRES_HOST: postgres-test:5432
+      USERS_GRPC_URL: users-api:6000
+    image: doctors-api
+    restart: always
+    command: ./doctor-api 
     ports:
-      - "127.0.0.1:8001:8000"
-      - "127.0.0.1:8002:8001"
-
+      - 8002:8002 # CRUD API
+      - 6002:6002 # gRPC
+    networks:
+      - shared-network
     depends_on:
-      - redis
       - db
-    networks:
-      - fullstack
+      - zookeeper
+      - kafka1
+      - users-api
 
-  redis:
-    container_name: dp210go_redisctr
-    image: redis:latest
+  appointments-api:
+    container_name: appointments-api 
+    environment:
+      POSTGRES_HOST: postgres-test:5432
+      KAFKA_BROKERS: kafka1:19091
+      DOCTORS_GRPC_URL: doctors-api:6002
+      USERS_GRPC_URL: users-api:6000
+    image: appointments-api
+    restart: always
+    command: ./appointment-api 
     ports:
-      - 6379:6379
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 1s
-      timeout: 3s
-      retries: 5
+      - 8001:8001 # CRUD API
+      - 6001:6001 # gRPC
     networks:
-      - fullstack
-    
+      - shared-network
+    depends_on:
+      - db
+      - zookeeper
+      - kafka1
+      - doctors-api
+      - users-api
 
   db:
-    container_name: dp210go_dbctr
-    image: postgres:latest
+    image: "postgres:12-alpine"
     restart: always
+    container_name: postgres-test
+    volumes:
+      - ./scripts:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_MULTIPLE_DATABASES: appointments,users,doctors,test
     ports:
       - 5432:5432
-    env_file:
-      - ./env/db.env
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "postgres" ]
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "appointments" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - fullstack
+      - shared-network
+
+  
+  zookeeper:
+    container_name: zookeeper
+    restart: always
+    image: zookeeper:3.4.9
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zookeeper:2888:3888
+    volumes:
+      - ./data/zookeeper/data:/data
+      - ./data/zookeeper/datalog:/datalog
+    networks:
+      - shared-network
+
+  kafka1:
+    container_name: kafka1
+    restart: always
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka1
+    ports:
+      - "9091:9091"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19091,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./data/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+    networks:
+      - shared-network
+  kafdrop:
+    container_name: kafdrop
+    restart: always
+    image: obsidiandynamics/kafdrop
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka1:19091"
+    depends_on:
+      - kafka1
+    networks:
+      - shared-network
+
+  prometheus:
+    container_name: prometheus_container
+    restart: always
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:Z
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=20d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - '9090:9090'
+    networks:
+      - shared-network
+
+  grafana:
+    container_name: grafana_container
+    restart: always
+    image: grafana/grafana
+    ports:
+      - '3000:3000'
+    networks:
+      - shared-network
 
 networks:
-  fullstack:
+  shared-network:
     driver: bridge

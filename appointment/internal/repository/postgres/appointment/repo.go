@@ -149,6 +149,7 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
+	// nolint:errcheck
 	defer rows.Close()
 	for rows.Next() {
 		a := entity.Appointment{}
@@ -162,6 +163,8 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 		if err != nil {
 			return nil, fmt.Errorf("rows scan error: %w", err)
 		}
+		a.From = a.From.UTC()
+		a.To = a.To.UTC()
 		res = append(res, a)
 	}
 
@@ -172,74 +175,97 @@ func (r *Repository) fetch(ctx context.Context, query string, args ...interface{
 }
 
 //GetAll get all appointments.
-func (r *Repository) GetAll(ctx context.Context, al *entity.AppointmentList) error {
+func (r *Repository) GetAll(ctx context.Context, p *entity.AppointmentsParam) (res []entity.Appointment, cursor string, err error) {
 	query := `
 	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
 	FROM appointments
 	WHERE 1=1`
-	return r.fetchAppointments(ctx, al, query)
+	q, a, err := addParam(p, query)
+	if err != nil {
+		return
+	}
+	res, err = r.fetch(ctx, q, a...)
+	if err != nil {
+		return
+	}
+	if len(res) != 0 && len(res) == p.Limits {
+		next := res[len(res)-1]
+		cursor = encodeCursor(next.From, next.ID)
+		return
+	}
+	return res, cursor, nil
 }
 
 //GetByPatientID get all appointments by patient id.
-func (r *Repository) GetByPatientID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error {
+func (r *Repository) GetByPatientID(ctx context.Context, id uuid.UUID, p *entity.AppointmentsParam) (res []entity.Appointment, cursor string, err error) {
 	query := `
 	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
 	FROM appointments 
 	WHERE patient_id = $1`
-	return r.fetchAppointments(ctx, al, query, id)
+	q, a, err := addParam(p, query, id)
+	if err != nil {
+		return
+	}
+	res, err = r.fetch(ctx, q, a...)
+	if err != nil {
+		return
+	}
+	if len(res) != 0 && len(res) == p.Limits {
+		next := res[len(res)-1]
+		cursor = encodeCursor(next.From, next.ID)
+		return
+	}
+	return res, cursor, nil
 }
 
 //GetByDoctorID get all appointments by doctor id.
-func (r *Repository) GetByDoctorID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error {
+func (r *Repository) GetByDoctorID(ctx context.Context, id uuid.UUID, p *entity.AppointmentsParam) (res []entity.Appointment, cursor string, err error) {
 	query := `
 	SELECT id, doctor_id, patient_id, lower(time_range), upper(time_range) 
 	FROM appointments 
 	WHERE doctor_id = $1`
-	return r.fetchAppointments(ctx, al, query, id)
+	q, a, err := addParam(p, query, id)
+	if err != nil {
+		return
+	}
+	res, err = r.fetch(ctx, q, a...)
+	if err != nil {
+		return
+	}
+	if len(res) != 0 && len(res) == p.Limits {
+		next := res[len(res)-1]
+		cursor = encodeCursor(next.From, next.ID)
+		return
+	}
+	return res, cursor, nil
 }
 
-//GetWithFilter.
-func (r *Repository) fetchAppointments(
-	ctx context.Context,
-	al *entity.AppointmentList,
-	query string, args ...interface{},
-) error {
-	if al.Cursor != "" {
-		ct, id, err := decodeCursor(al.Cursor)
+func addParam(p *entity.AppointmentsParam, query string, args ...interface{}) (string, []interface{}, error) {
+	if p.Cursor != "" {
+		ct, id, err := decodeCursor(p.Cursor)
 		if err != nil {
-			return customerrors.ErrBadParamInput
+			return "", nil, customerrors.ErrBadParamInput
 		}
 		args = append(args, id)
 		query += ` AND id < $` + strconv.Itoa(len(args))
-		if al.From.Before(ct) {
-			al.From = ct
+		if p.From.Before(ct) {
+			p.From = ct
 		}
 	}
-	if !al.From.IsZero() {
-		args = append(args, al.From)
-		query += ` AND lower(time_range) > $` + strconv.Itoa(len(args))
+	if !p.From.IsZero() {
+		args = append(args, p.From)
+		query += ` AND upper(time_range) > $` + strconv.Itoa(len(args))
 	}
-	if !al.To.IsZero() {
-		args = append(args, al.To)
-		query += ` AND upper(time_range) < $` + strconv.Itoa(len(args))
+	if !p.To.IsZero() {
+		args = append(args, p.To)
+		query += ` AND lower(time_range) < $` + strconv.Itoa(len(args))
 	}
-	if al.Limits == 0 {
-		al.Limits = 10
+	if p.Limits == 0 {
+		p.Limits = 10
 	}
-	args = append(args, al.Limits)
+	args = append(args, p.Limits)
 	query += ` ORDER BY lower(time_range) LIMIT $` + strconv.Itoa(len(args))
-	var err error
-	al.Appointments, err = r.fetch(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-	if len(al.Appointments) == al.Limits {
-		next := al.Appointments[len(al.Appointments)-1]
-		al.Cursor = encodeCursor(next.From, next.ID)
-		return nil
-	}
-	al.Cursor = ""
-	return nil
+	return query, args, nil
 }
 
 func decodeCursor(encodedCursor string) (res time.Time, id uuid.UUID, err error) {

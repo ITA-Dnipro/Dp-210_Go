@@ -16,7 +16,7 @@ import (
 
 // UsersUsecases represent user usecases.
 type Usecase interface {
-	GetByPatientID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error
+	GetByDoctorID(ctx context.Context, id uuid.UUID, p *entity.AppointmentsParam) ([]entity.Appointment, string, error)
 }
 
 // userService gRPC Service
@@ -37,14 +37,15 @@ func (u *appointmentServiceServer) GetByDoctorID(ctx context.Context, req *as.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	al := entity.AppointmentList{
+	p := entity.AppointmentsParam{
 		From: req.GetFrom().AsTime(),
 		To:   req.GetTill().AsTime(),
 	}
-	if err := u.usecase.GetByPatientID(ctx, doctorID, &al); err != nil {
+	resp, _, err := u.usecase.GetByDoctorID(ctx, doctorID, &p)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return &as.GetByDoctorIDRes{Appointments: toProtoList(al.Appointments)}, nil
+	return &as.GetByDoctorIDRes{Appointments: toProtoList(resp)}, nil
 }
 func toProto(a entity.Appointment) *as.Appointment {
 	return &as.Appointment{

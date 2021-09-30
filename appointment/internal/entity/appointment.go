@@ -15,10 +15,9 @@ type Appointment struct {
 	To        time.Time `json:"to" readonly:"true"`
 }
 
-type AppointmentList struct {
-	Appointments []Appointment `json:"data"`
-	From         time.Time     `json:"-"`
-	To           time.Time     `json:"-"`
-	Limits       int
-	Cursor       string
+type AppointmentsParam struct {
+	Limits int       `json:"limit"`
+	Cursor string    `json:"cursor"`
+	From   time.Time `json:"-"`
+	To     time.Time `json:"-"`
 }

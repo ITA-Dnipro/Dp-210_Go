@@ -22,11 +22,16 @@ const (
 	idKey = "id"
 )
 
+type AppointmentsResponse struct {
+	Appointments []entity.Appointment `json:"data"`
+	Cursor       string               `json:"cursor"`
+}
+
 // Usecase represent appointment usecase.
 type Usecase interface {
-	GetByPatientID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error
-	GetByDoctorID(ctx context.Context, id uuid.UUID, al *entity.AppointmentList) error
-	GetAll(ctx context.Context, al *entity.AppointmentList) error
+	GetByPatientID(ctx context.Context, id uuid.UUID, p *entity.AppointmentsParam) ([]entity.Appointment, string, error)
+	GetByDoctorID(ctx context.Context, id uuid.UUID, p *entity.AppointmentsParam) ([]entity.Appointment, string, error)
+	GetAll(ctx context.Context, p *entity.AppointmentsParam) ([]entity.Appointment, string, error)
 	GetByID(ctx context.Context, id uuid.UUID) (entity.Appointment, error)
 	CreateRequest(ctx context.Context, a *entity.Appointment) error
 	Create(ctx context.Context, a *entity.Appointment) error
@@ -71,6 +76,10 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.usecase.CreateRequest(r.Context(), &a); err != nil {
+		if errors.Is(err, customerrors.ErrBadParamInput) {
+			h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
+			return
+		}
 		h.logger.Error("can't create a appointment", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -81,19 +90,20 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 
 //Get all get all appointments.
 func (h *Handlers) GetAll(w http.ResponseWriter, r *http.Request) {
-	var al entity.AppointmentList
-	if err := queryParameters(&al, r); err != nil {
+	var p entity.AppointmentsParam
+	if err := queryParameters(&p, r); err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	if err := h.usecase.GetAll(r.Context(), &al); err != nil {
+	ap, cursor, err := h.usecase.GetAll(r.Context(), &p)
+	if err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
 	h.logger.Info("get all appointments")
-	h.render(w, al)
+	h.render(w, AppointmentsResponse{Appointments: ap, Cursor: cursor})
 }
 
 //GetByID get appointments by id.
@@ -120,19 +130,20 @@ func (h *Handlers) GetByDoctorID(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusNotFound, "doctor id invalid", w)
 		return
 	}
-	al := entity.AppointmentList{}
-	if err := queryParameters(&al, r); err != nil {
+	p := entity.AppointmentsParam{}
+	if err := queryParameters(&p, r); err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	if err := h.usecase.GetByDoctorID(r.Context(), id, &al); err != nil {
+	ap, cursor, err := h.usecase.GetByDoctorID(r.Context(), id, &p)
+	if err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
 	h.logger.Info("get all appointments")
-	h.render(w, al)
+	h.render(w, AppointmentsResponse{Appointments: ap, Cursor: cursor})
 }
 
 //GetByPatientID get appointments by doctor id.
@@ -142,19 +153,20 @@ func (h *Handlers) GetByPatientID(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(http.StatusNotFound, "patient id invalid", w)
 		return
 	}
-	al := entity.AppointmentList{}
-	if err := queryParameters(&al, r); err != nil {
+	p := entity.AppointmentsParam{}
+	if err := queryParameters(&p, r); err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
 		return
 	}
-	if err := h.usecase.GetByPatientID(r.Context(), id, &al); err != nil {
+	ap, cursor, err := h.usecase.GetByPatientID(r.Context(), id, &p)
+	if err != nil {
 		h.logger.Error("can't get appointments", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
 	h.logger.Info("get all appointments")
-	h.render(w, al)
+	h.render(w, AppointmentsResponse{Appointments: ap, Cursor: cursor})
 }
 
 // DeleteAppointment deletes a appointment from storage
@@ -179,7 +191,7 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	h.render(w, Message{"deleted"})
 }
 
-// CreateUser Add new appointment.
+// Update update appointment.
 func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, idKey)) // Gets params
 	if err != nil {
@@ -232,6 +244,10 @@ func (h *Handlers) SendResult(w http.ResponseWriter, r *http.Request) {
 	}
 	v.AppointmentID = id
 	if err := h.usecase.SendResult(r.Context(), &v); err != nil {
+		if errors.Is(err, customerrors.ErrNotFound) {
+			h.writeErrorResponse(http.StatusBadRequest, err.Error(), w)
+			return
+		}
 		h.logger.Error("can't send result", zap.Error(err))
 		h.writeErrorResponse(http.StatusInternalServerError, err.Error(), w)
 		return
@@ -242,24 +258,24 @@ func (h *Handlers) SendResult(w http.ResponseWriter, r *http.Request) {
 	h.render(w, v)
 }
 
-func queryParameters(al *entity.AppointmentList, r *http.Request) (err error) {
+func queryParameters(p *entity.AppointmentsParam, r *http.Request) (err error) {
 	layout := "2006-01-02T15:04:05"
 	query := r.URL.Query()
-	al.Cursor = query.Get("cursor")
+	p.Cursor = query.Get("cursor")
 	if query.Has("limit") {
-		al.Limits, err = strconv.Atoi(query.Get("limit"))
+		p.Limits, err = strconv.Atoi(query.Get("limit"))
 		if err != nil {
 			return
 		}
 	}
 	if query.Has("from") {
-		al.From, err = time.Parse(layout, query.Get("from"))
+		p.From, err = time.Parse(layout, query.Get("from"))
 		if err != nil {
 			return
 		}
 	}
 	if query.Has("to") {
-		al.To, err = time.Parse(layout, query.Get("to"))
+		p.To, err = time.Parse(layout, query.Get("to"))
 		if err != nil {
 			return
 		}
@@ -272,13 +288,17 @@ type Message struct {
 	Msg string
 }
 
-func (*Handlers) writeErrorResponse(code int, msg string, w http.ResponseWriter) {
+func (h *Handlers) writeErrorResponse(code int, msg string, w http.ResponseWriter) {
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(Message{msg})
+	if err := json.NewEncoder(w).Encode(Message{msg}); err != nil {
+		h.logger.Error("can't encode error data", zap.Error(err))
+	}
 }
 
 func (h *Handlers) render(w http.ResponseWriter, data interface{}) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "\t")
-	enc.Encode(data)
+	if err := enc.Encode(data); err != nil {
+		h.logger.Error("can't encode data", zap.Error(err))
+	}
 }

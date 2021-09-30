@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"context"
+	"log"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/appointment/internal/entity"
 	ds "github.com/ITA-Dnipro/Dp-210_Go/appointment/proto/doctors"
@@ -46,10 +47,11 @@ func (c *Client) GetByID(ctx context.Context, id uuid.UUID) (entity.Doctor, erro
 		StartAt:    rd.GetStartAt().AsTime(),
 		EndAt:      rd.GetEndAt().AsTime(),
 	}
-	//TODO: add validation
 	return d, nil
 }
 
 func (c *Client) Close() {
-	c.conn.Close()
+	if err := c.conn.Close(); err != nil {
+		log.Println(err)
+	}
 }
