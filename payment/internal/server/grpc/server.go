@@ -25,7 +25,7 @@ func (s *GRPCServer) DocStat(ctx context.Context, req *stat.DocRequest) (*empty.
 	doctorsArr, err := s.h.DoctorsUnmarshal(req.DocsBytesArr)
 	if err != nil {
 		s.h.Logger.Error("error in DocStat", zap.String("server", err.Error()))
-		return &empty.Empty{}, nil
+		return &empty.Empty{}, err
 	}
 	// 2) Получить лучшего.
 	bestDoctorsArr := s.h.GetBest(doctorsArr)

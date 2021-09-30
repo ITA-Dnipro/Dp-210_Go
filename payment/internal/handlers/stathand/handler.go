@@ -2,6 +2,7 @@ package stathand
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/entity"
 	"go.uber.org/zap"
 	"sort"
@@ -20,7 +21,7 @@ type Handler struct {
 func (h *Handler) DoctorsUnmarshal(bytes []byte) (doctors []entity.Doctor, err error) {
 	err = json.Unmarshal(bytes, &doctors)
 	if err != nil {
-		return
+		err = fmt.Errorf("unmarshal error > %s", err)
 	}
 	return
 }

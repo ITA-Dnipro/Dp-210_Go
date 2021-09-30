@@ -3,7 +3,7 @@ package kafkahand
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/ITA-Dnipro/Dp-210_Go/payment/internal/entity"
 	st "github.com/ITA-Dnipro/Dp-210_Go/payment/internal/proto/statistics"
 
@@ -17,41 +17,35 @@ type DataRepository interface {
 
 func NewHandler(dataRepository DataRepository, log *zap.Logger, sc st.StatClient) *Handler {
 	return &Handler{
-		dr:         dataRepository,
+		Dr:         dataRepository,
 		Logger:     log,
 		statClient: sc,
 	}
 }
 
 type Handler struct {
-	dr         DataRepository
+	Dr         DataRepository
 	Logger     *zap.Logger
 	statClient st.StatClient
 }
 
 func (h *Handler) InsertToDb(bill *entity.Bill) error {
-	return h.dr.InsertDataToDb(bill)
+	return h.Dr.InsertDataToDb(bill)
 }
 
-func (h *Handler) SendMonthlyReport() ([]byte, error) {
-	docPat, err := h.dr.GetAllDataFromDb()
+func (h *Handler) SendMonthlyReport(ctx context.Context) ([]byte, error) {
+	docPat, err := h.Dr.GetAllDataFromDb()
 	if err != nil {
 		return nil, err
 	}
 	if len(docPat.Patients) == 0 || len(docPat.Doctors) == 0 {
-		return nil, nil
+		return nil, errors.New("lists from db empty")
 	}
 
-	doctorsBytes, err := json.Marshal(docPat.Doctors)
-	if err != nil {
-		return nil, fmt.Errorf("doctors marshal error > %s", err)
-	}
-	_, _ = h.statClient.DocStat(context.Background(), &st.DocRequest{DocsBytesArr: doctorsBytes})
+	doctorsBytes, _ := json.Marshal(docPat.Doctors)
+	_, _ = h.statClient.DocStat(ctx, &st.DocRequest{DocsBytesArr: doctorsBytes})
 
-	report, err := json.Marshal(docPat.Patients)
-	if err != nil {
-		return nil, fmt.Errorf("patients marshal error > %s", err)
-	}
+	report, _ := json.Marshal(docPat.Patients)
 
 	return report, nil
 }

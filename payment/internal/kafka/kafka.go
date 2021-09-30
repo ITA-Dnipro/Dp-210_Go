@@ -23,13 +23,9 @@ var w = kafkago.Writer{
 }
 
 func Produce(ctx context.Context, h *kafkahand.Handler) {
-	report, err := h.SendMonthlyReport()
+	report, err := h.SendMonthlyReport(ctx)
 	if err != nil {
 		h.Logger.Error("send monthly report to topic info >", zap.Error(err))
-		return
-	}
-
-	if report == nil {
 		return
 	}
 
