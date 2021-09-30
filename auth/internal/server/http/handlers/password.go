@@ -3,11 +3,20 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"net/http"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/entity"
 	md "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
+)
+
+var (
+	restoredPasswordsTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "http_restored_passwords_total",
+		Help: "The total number of restored password",
+	})
 )
 
 func (h *Handlers) SendRestorePasswordCode(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +61,7 @@ func (h *Handlers) RestorePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	restoredPasswordsTotal.Inc()
 	h.render(w, tk)
 }
 
