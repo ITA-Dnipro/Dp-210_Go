@@ -1,6 +1,8 @@
-package email_sender
+package usesase
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type PasswordCodeSender struct {
 	emailSender *GmailEmailSender

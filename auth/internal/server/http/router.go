@@ -2,6 +2,7 @@ package http
 
 import (
 	"database/sql"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/client"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/repository/postgres"
-	mail "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/sender"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/handlers"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http/middleware"
 
@@ -24,10 +24,10 @@ type Auth interface {
 	ValidateToken(t usecase.JwtToken) (usecase.UserAuth, error)
 }
 
-func NewRouter(db *sql.DB, logger *zap.Logger, gmail *mail.GmailEmailSender, rdb *redis.Client, auth Auth) (chi.Router, error) {
+func NewRouter(db *sql.DB, logger *zap.Logger, kafka *client.Kafka, rdb *redis.Client, auth Auth) (chi.Router, error) {
 	repo := postgres.NewRepository(db)
 
-	mailSender := mail.NewPasswordCodeSender(gmail)
+	mailSender := usecase.NewPasswordCodeSender(kafka)
 
 	md := &middleware.Middleware{Logger: logger, Auth: auth}
 

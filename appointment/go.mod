@@ -49,10 +49,8 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/ilyakaznacheev/cleanenv v1.2.5
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
@@ -65,13 +63,9 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/golang/protobuf v1.4.3
 	github.com/kelseyhightower/envconfig v1.4.0
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
-	olympos.io/encoding/edn v0.0.0-20200308123125-93e3b8dd0e24 // indirect
+	google.golang.org/grpc v1.40.0
+	google.golang.org/protobuf v1.25.0
 )

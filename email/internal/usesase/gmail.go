@@ -1,4 +1,4 @@
-package sender
+package usesase
 
 import (
 	"context"
@@ -145,15 +145,3 @@ func saveToken(path string, token *oauth2.Token) error {
 	json.NewEncoder(f).Encode(token)
 	return nil
 }
-
-//Example
-// func main() {
-// 	ges, err := NewGmailEmailSender("credentials.json", "token.json")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	if err = ges.Send("nicknema13@gmail.com", "email test", "gotcha"); err != nil {
-// 		log.Fatal(err)
-// 	}
-// }

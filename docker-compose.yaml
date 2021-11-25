@@ -38,6 +38,14 @@ services:
     networks:
       - fullstack
 
+  email:
+    container_name: dp210go_email
+    image: dp210go_email
+    working_dir: /app
+    command: ./email
+    networks:
+      - fullstack
+
   redis:
     container_name: dp210go_redisctr
     image: redis:latest

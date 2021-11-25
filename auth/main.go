@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	cache "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/cache/redis"
+	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/client"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/usecase"
 	"google.golang.org/grpc"
 	"log"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/config"
 	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/repository/postgres"
-	"github.com/ITA-Dnipro/Dp-210_Go/auth/internal/sender"
 	router "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/http"
 
 	grpcServer "github.com/ITA-Dnipro/Dp-210_Go/auth/internal/server/grpc"
@@ -49,11 +49,6 @@ func main() {
 
 	logger, _ := zap.NewProduction()
 
-	gmail, err := sender.NewGmailEmailSender(configPath, "token.json")
-	if err != nil {
-		log.Fatal(fmt.Errorf("gmail sender: can't find files: %w", err))
-	}
-
 	db, err := sql.Open("pgx", cfg.DatabaseStr())
 	if err != nil {
 		log.Fatal(fmt.Errorf("creating db: %w", err))
@@ -86,7 +81,12 @@ func main() {
 		log.Fatal(fmt.Errorf("initialize auth: %w", err))
 	}
 
-	r, err := router.NewRouter(db, logger, gmail, rdb, jwt)
+	kafka, err := client.NewKafka(cfg.KafkaBrokers, logger)
+	if err != nil {
+		log.Fatalf("init kafka: %w", err)
+	}
+
+	r, err := router.NewRouter(db, logger, kafka, rdb, jwt)
 	_ = r
 	if err != nil {
 		log.Fatal(fmt.Errorf("initialize router: %w", err))
